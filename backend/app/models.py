@@ -28,13 +28,35 @@ class RiskLevel(str, Enum):
 
 
 def level_for_score(score: int) -> RiskLevel:
-    if score >= 80:
+    from .config import settings  # local import: config must stay importable without the models
+
+    medium, high, critical = settings.risk_thresholds
+    if score >= critical:
         return RiskLevel.critical
-    if score >= 55:
+    if score >= high:
         return RiskLevel.high
-    if score >= 30:
+    if score >= medium:
         return RiskLevel.medium
     return RiskLevel.low
+
+
+class EvaluateRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class Evaluation(BaseModel):
+    """What the risk-evaluator chat returns. score/level are None when there is no evidence at all."""
+    score: Optional[int] = None
+    level: Optional[RiskLevel] = None
+    basis: str  # "transcript" | "transcript+user_text" | "user_text" | "none"
+    basis_note: str
+    answer: str
+    explanation: str = ""
+    warning_signs: list[str] = Field(default_factory=list)
+    recommended_steps: list[str] = Field(default_factory=list)
+    transcript_lines: int = 0
+    scorer: str = "heuristic"
+    disclaimer: str
 
 
 class CallStatus(str, Enum):

@@ -54,10 +54,29 @@ class Settings:
     DEEPGRAM_ENDPOINTING_MS: int = int(os.getenv("DEEPGRAM_ENDPOINTING_MS", "500"))  # silence that closes a phrase
     DEEPGRAM_URL: str = os.getenv("DEEPGRAM_URL", "wss://api.deepgram.com/v1/listen")
 
+    # Risk bands: a score at or above each value is in that band (below RISK_MEDIUM_MIN is low).
+    # Must be ascending integers within 1-100, otherwise the defaults below are used.
+    RISK_MEDIUM_MIN: int = int(os.getenv("RISK_MEDIUM_MIN", "30"))
+    RISK_HIGH_MIN: int = int(os.getenv("RISK_HIGH_MIN", "55"))
+    RISK_CRITICAL_MIN: int = int(os.getenv("RISK_CRITICAL_MIN", "80"))
+
+    # When true (recommended), a call is visible only to the person who started it and people who joined it.
+    RESTRICT_CALL_ACCESS: bool = _bool("RESTRICT_CALL_ACCESS", True)
+    # Cap on risk-evaluator questions per person per minute (protects Claude spend).
+    EVALUATOR_RATE_PER_MINUTE: int = int(os.getenv("EVALUATOR_RATE_PER_MINUTE", "20"))
+
     # Firestore persistence (only active when Firebase itself is configured).
     FIRESTORE_ENABLED: bool = _bool("FIRESTORE_ENABLED", True)
     FIRESTORE_LOAD_LIMIT: int = int(os.getenv("FIRESTORE_LOAD_LIMIT", "50"))
     FIRESTORE_MASK_NUMBERS: bool = _bool("FIRESTORE_MASK_NUMBERS", True)
+
+    @property
+    def risk_thresholds(self) -> tuple[int, int, int]:
+        """(medium, high, critical) minimum scores. Invalid configuration falls back to 30/55/80."""
+        t = (self.RISK_MEDIUM_MIN, self.RISK_HIGH_MIN, self.RISK_CRITICAL_MIN)
+        if all(isinstance(v, int) and 1 <= v <= 100 for v in t) and t[0] < t[1] < t[2]:
+            return t
+        return (30, 55, 80)
 
     @property
     def claude_configured(self) -> bool:
@@ -88,6 +107,8 @@ class Settings:
             "deepgram_stt": self.deepgram_configured,
             "firestore_persistence": self.firestore_enabled,
             "dev_mode_auth": not self.firebase_configured,
+            "risk_thresholds": dict(zip(("medium", "high", "critical"), self.risk_thresholds)),
+            "call_access_restricted": self.RESTRICT_CALL_ACCESS,
         }
 
 

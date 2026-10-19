@@ -35,7 +35,32 @@ class CallStore:
         self._calls: dict[str, Call] = {}
         self._subscribers: list[Callable[[dict], None]] = []
         self._category_memory: dict[str, set[str]] = {}
+        self._participants: dict[str, set[str]] = {}  # call id -> uids that joined (in memory; the owner is on the call)
         self._lock = threading.RLock()
+
+    # ---- access control ----
+    def add_participant(self, call_id: str, uid: str) -> None:
+        with self._lock:
+            self._participants.setdefault(call_id, set()).add(uid)
+
+    def can_access(self, call: Call | None, uid: str) -> bool:
+        """Owner and joined participants only. Calls with no recorded owner (old data) stay visible."""
+        if call is None:
+            return False
+        if not settings.RESTRICT_CALL_ACCESS or not call.owner_uid:
+            return True
+        return call.owner_uid == uid or uid in self._participants.get(call.id, ())
+
+    def can_access_id(self, call_id: str, uid: str) -> bool:
+        return self.can_access(self._calls.get(call_id), uid)
+
+    def get_for(self, call_id: str, uid: str) -> Call | None:
+        """The call, or None when it does not exist OR the person has no access (callers answer 404 either way)."""
+        call = self._calls.get(call_id)
+        return call if self.can_access(call, uid) else None
+
+    def list_calls_for(self, uid: str) -> list[Call]:
+        return [c for c in self.list_calls() if self.can_access(c, uid)]
 
     # ---- subscriptions (used by the websocket router) ----
     def subscribe(self, callback: Callable[[dict], None]) -> None:
@@ -191,11 +216,12 @@ class CallStore:
         with self._lock:
             self._calls.clear()
             self._category_memory.clear()
+            self._participants.clear()
         self._publish({"type": "demo_reset"})
 
-    def analytics(self) -> dict:
+    def analytics(self, uid: str | None = None) -> dict:
         with self._lock:
-            calls = list(self._calls.values())
+            calls = [c for c in self._calls.values() if uid is None or self.can_access(c, uid)]
         active = [c for c in calls if c.status == CallStatus.active]
         high_risk_alerts = sum(
             1 for c in calls for a in c.alerts if a.level.value in ("high", "critical")

@@ -352,6 +352,7 @@ async def voice_socket(websocket: WebSocket, code: str, role: str = "guest"):
 
     me = Participant(role=role, identity=identity, ws=websocket, speaker=Speaker.caller if role == "host" else Speaker.agent)
     room.parts[role] = me
+    store.add_participant(room.call_id, identity.uid)
     peer = room.peer_of(role)
     call = store.get(room.call_id)
     me.send_json({"type": "joined", "role": role, "code": room.code, "call_id": room.call_id,

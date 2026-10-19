@@ -24,22 +24,29 @@ async def dashboard_socket(websocket: WebSocket):
         await websocket.close(code=4401)
         return
     try:
-        auth.read_session_token(token)
+        identity = auth.read_session_token(token)
     except Exception:
         await websocket.close(code=4401)
         return
+    uid = identity.uid
 
     await websocket.accept()
     loop = asyncio.get_event_loop()
     queue: asyncio.Queue = asyncio.Queue()
 
+    def visible(event: dict) -> bool:
+        """Only events about calls this person may see (a demo reset has no call and goes to everyone)."""
+        call_id = (event.get("call") or {}).get("id") or event.get("call_id")
+        return call_id is None or store.can_access_id(call_id, uid)
+
     def on_event(event: dict) -> None:
-        loop.call_soon_threadsafe(queue.put_nowait, event)
+        if visible(event):
+            loop.call_soon_threadsafe(queue.put_nowait, event)
 
     store.subscribe(on_event)
     try:
         # Prime the client with current state on connect.
-        await websocket.send_text(json.dumps({"type": "snapshot", "calls": [c.model_dump() for c in store.list_calls()]}))
+        await websocket.send_text(json.dumps({"type": "snapshot", "calls": [c.model_dump() for c in store.list_calls_for(uid)]}))
         while True:
             event = await queue.get()
             await websocket.send_text(json.dumps(event, default=str))
