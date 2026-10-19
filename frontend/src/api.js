@@ -47,6 +47,8 @@ export const api = {
   getCall: (id) => request(`/api/calls/${id}`),
   ingest: (id, text, speaker = "caller") =>
     request(`/api/calls/${id}/ingest`, { method: "POST", body: JSON.stringify({ text, speaker }) }),
+  evaluate: (id, message) =>
+    request(`/api/calls/${id}/evaluate`, { method: "POST", body: JSON.stringify({ message }) }),
   endCall: (id) => request(`/api/calls/${id}/end`, { method: "POST" }),
   recordAction: (id, type, note = "") =>
     request(`/api/calls/${id}/actions`, { method: "POST", body: JSON.stringify({ type, note }) }),

@@ -9,13 +9,14 @@ import Spinner from "../components/Spinner";
 import LanguageSelect from "../components/LanguageSelect";
 import { VoiceSession } from "../lib/voiceSession";
 import { voiceSupported } from "../lib/voiceAudio";
+import EvaluatorChat from "../components/EvaluatorChat";
 
 /**
  * In-app voice call. The person who starts it is the "caller" (the side that is scored); the person who joins with
  * the code is the one being called. Both see the notice and must accept it BEFORE the microphone is opened or the
  * socket is connected; the server then refuses to relay or transcribe anything until both have accepted.
  */
-const FRESH = { peer: false, live: false, muted: false, peerMuted: false, finals: [], interim: { caller: "", agent: "" }, risk: null, sttOff: false, startedAt: null };
+const FRESH = { callId: null, peer: false, live: false, muted: false, peerMuted: false, finals: [], interim: { caller: "", agent: "" }, risk: null, sttOff: false, startedAt: null };
 const clock = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 const normaliseCode = (s) => (s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
@@ -92,7 +93,7 @@ export default function CallRoom() {
   const onEvent = useCallback((m) => {
     switch (m.type) {
       case "joined":
-        setCall((c) => ({ ...c, peer: !!m.peer, sttOff: !m.stt }));
+        setCall((c) => ({ ...c, callId: m.call_id || null, peer: !!m.peer, sttOff: !m.stt }));
         setPhase("call");
         break;
       case "peer":
@@ -358,6 +359,11 @@ export default function CallRoom() {
                 ))}
               </div>
             </section>
+
+            <details className="vc-card ev-details">
+              <summary>{t("ev.title")}</summary>
+              <EvaluatorChat callId={call.callId} />
+            </details>
 
             <div className="vc-controls">
               <button className={`btn vc-round ${call.muted ? "on" : ""}`} onClick={toggleMute} aria-pressed={call.muted} aria-label={call.muted ? t("voice.unmute") : t("voice.mute")}>

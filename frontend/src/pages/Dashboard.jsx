@@ -230,7 +230,7 @@ export default function Dashboard() {
       <TopBar analytics={analytics} wsStatus={wsStatus} onPalette={() => setPaletteOpen(true)} />
       <div className="shell" data-nav={navOpen ? "open" : "closed"}>
         <WaveBackdrop level={backdropLevel} />
-        <NavRail view={view} onView={setView} onPalette={() => setPaletteOpen(true)} onVoice={() => navigate("/call")} reviewCount={reviewCount} open={navOpen} onToggle={toggleNav} />
+        <NavRail view={view} onView={setView} onPalette={() => setPaletteOpen(true)} onVoice={() => navigate("/call")} onHistory={() => navigate("/history")} onSettings={() => navigate("/settings")} reviewCount={reviewCount} open={navOpen} onToggle={toggleNav} />
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={view}

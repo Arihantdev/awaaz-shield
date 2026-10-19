@@ -829,3 +829,70 @@ html.cc-threat { --cc-glow: 221, 90, 101; }
   .ambient { transition: none; }
   .card:hover, .tile:hover { transform: none; }
 }
+
+/* ---------- Risk evaluator chat, History, Settings ---------- */
+.ev { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ev-intro { color: var(--text-dim); font-size: 12.5px; }
+.ev-log { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; padding-right: 2px; }
+.ev-sugg { display: flex; flex-direction: column; gap: 6px; }
+.ev-chip { text-align: left; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; color: var(--text); padding: 9px 12px; font-size: 13px; cursor: pointer; line-height: 1.35; }
+.ev-chip:hover:not(:disabled) { border-color: var(--signal); background: var(--signal-dim); }
+.ev-chip:disabled { opacity: .45; cursor: not-allowed; }
+.ev-me { align-self: flex-end; max-width: 88%; background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 12px 12px 3px 12px; padding: 8px 12px; overflow-wrap: anywhere; }
+.ev-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.ev-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ev-basis { font-size: 11.5px; color: var(--text-dim); border: 1px solid var(--line-2); border-radius: 999px; padding: 2px 9px; }
+.ev-basis[data-basis="user_text"], .ev-basis[data-basis="none"] { color: var(--risk-medium); border-color: color-mix(in srgb, var(--risk-medium) 45%, transparent); }
+.ev-answer { overflow-wrap: anywhere; }
+.ev-note { display: flex; gap: 6px; align-items: flex-start; font-size: 12px; color: var(--text-dim); }
+.ev-note svg { flex: none; margin-top: 2px; }
+.ev-sec h4 { font-size: 12px; color: var(--text-dim); font-weight: 600; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .04em; }
+.ev-sec ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.ev-disclaimer { font-size: 11.5px; color: var(--text-faint); border-top: 1px solid var(--line); padding-top: 8px; }
+.ev-err { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--risk-critical); font-size: 13px; }
+.ev-busy { display: flex; align-items: center; gap: 8px; color: var(--text-dim); }
+.ev-form { display: flex; gap: 8px; }
+.ev-form input { flex: 1; }
+.ev-details { padding: 0; }
+.ev-details > summary { cursor: pointer; padding: 14px 18px; font-weight: 600; font-family: var(--font-display); list-style-position: inside; }
+.ev-details > .ev { padding: 0 18px 16px; }
+
+.pg-title { font-size: 22px; margin-bottom: 4px; }
+.pg-lead { margin-bottom: 14px; }
+.hist-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.hist-item { padding: 0; }
+.hist-item summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; padding: 14px 16px; min-height: 56px; }
+.hist-main { display: flex; flex-direction: column; min-width: 0; }
+.hist-main b { overflow-wrap: anywhere; }
+.hist-main .muted { font-size: 12px; }
+.hist-item details > :not(summary) { margin: 0 16px 14px; }
+.hist-expl { color: var(--text-dim); }
+.hist-lines { padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.hist-lines b { color: var(--text-dim); }
+.set-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.set-grid .vc-card { display: flex; flex-direction: column; gap: 10px; }
+.set-wide { grid-column: 1 / -1; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.set-list { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.set-dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 14px; }
+.set-dl dt { color: var(--text-dim); }
+.set-dl dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+
+@media (max-width: 860px) {
+  /* the nav becomes a horizontal bar: let it scroll sideways instead of squeezing the buttons */
+  .nav { overflow-x: auto; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex: none; min-height: 44px; }
+  .set-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .set-dl { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .set-dl dd { text-align: left; margin-bottom: 8px; }
+  /* 16px inputs stop iPhone Safari zooming into the field; 44px targets are easy to hit */
+  input, select, textarea { font-size: 16px; }
+  .ev-chip { min-height: 44px; display: flex; align-items: center; }
+  .ev-form .btn, .ev-form input { min-height: 44px; }
+  .ev-log { max-height: 320px; }
+  .vc-main { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .vc-main { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+}

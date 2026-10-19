@@ -1,6 +1,6 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { motion } from "motion/react";
-import { Activity, BarChart3, ChevronsLeft, ChevronsRight, LayoutDashboard, PhoneCall, Search } from "lucide-react";
+import { Activity, BarChart3, ChevronsLeft, ChevronsRight, History, LayoutDashboard, PhoneCall, Search, Settings } from "lucide-react";
 import { Mark } from "./TopBar";
 import { useT } from "../i18n";
 
@@ -25,7 +25,7 @@ function Tip({ label, enabled, children }) {
   );
 }
 
-export default function NavRail({ view, onView, onPalette, onVoice, reviewCount, open, onToggle }) {
+export default function NavRail({ view, onView, onPalette, onVoice, onHistory, onSettings, reviewCount, open, onToggle }) {
   const t = useT();
   return (
     <Tooltip.Provider>
@@ -51,6 +51,22 @@ export default function NavRail({ view, onView, onPalette, onVoice, reviewCount,
             <span className="nav-label">{t("nav.voice")}</span>
           </button>
         </Tip>
+        {onHistory && (
+          <Tip label={t("nav.history")} enabled={!open}>
+            <button className="nav-btn" aria-label={t("nav.history")} onClick={onHistory}>
+              <History size={20} aria-hidden="true" />
+              <span className="nav-label">{t("nav.history")}</span>
+            </button>
+          </Tip>
+        )}
+        {onSettings && (
+          <Tip label={t("nav.settings")} enabled={!open}>
+            <button className="nav-btn" aria-label={t("nav.settings")} onClick={onSettings}>
+              <Settings size={20} aria-hidden="true" />
+              <span className="nav-label">{t("nav.settings")}</span>
+            </button>
+          </Tip>
+        )}
         <div className="nav-spacer" />
         <Tip label={t("nav.search")} enabled={!open}>
           <button className="nav-btn" aria-label={t("nav.palette")} onClick={onPalette}>

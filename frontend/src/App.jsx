@@ -3,6 +3,8 @@ import { useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CallRoom from "./pages/CallRoom";
+import History from "./pages/History";
+import Settings from "./pages/Settings";
 import ConsentGate from "./components/ConsentGate";
 import useSpotlight from "./hooks/useSpotlight";
 
@@ -39,6 +41,26 @@ export default function App() {
           <PrivateRoute>
             <ConsentGate>
               <CallRoom />
+            </ConsentGate>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/history"
+        element={
+          <PrivateRoute>
+            <ConsentGate>
+              <History />
+            </ConsentGate>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute>
+            <ConsentGate>
+              <Settings />
             </ConsentGate>
           </PrivateRoute>
         }

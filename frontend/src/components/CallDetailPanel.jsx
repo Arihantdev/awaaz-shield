@@ -11,6 +11,7 @@ import RiskChart from "./RiskChart";
 import MicCapture from "./MicCapture";
 import LiveAudio from "./LiveAudio";
 import Spinner from "./Spinner";
+import EvaluatorChat from "./EvaluatorChat";
 import SignalWave from "./SignalWave";
 import { micLevel } from "../lib/micLevel";
 
@@ -276,6 +277,10 @@ export default function CallDetailPanel({ call, onChanged, deepgramAvailable = f
               ))}
             </ul>
           )}
+        </section>
+        <section className="block">
+          <h3>{t("ev.title")}</h3>
+          <EvaluatorChat key={call.id} callId={call.id} />
         </section>
       </aside>
     </>
