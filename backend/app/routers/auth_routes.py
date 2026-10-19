@@ -57,7 +57,9 @@ def dev_login(body: DevLogin, request: Request, response: Response):
 
 @router.get("/me")
 def me(identity: auth.Identity = Depends(auth.require_session)):
-    return {"uid": identity.uid, "email": identity.email, "dev_mode": identity.dev_mode}
+    from ..store import store
+
+    return {"uid": identity.uid, "email": identity.email, "dev_mode": identity.dev_mode, "operator": store.is_operator(identity.uid)}
 
 
 @router.post("/logout")

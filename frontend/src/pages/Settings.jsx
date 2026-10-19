@@ -104,6 +104,8 @@ export default function Settings() {
             <li>{t("set.priv2")}</li>
             <li>{status ? (status.firestore_persistence ? t("set.privSaved") : t("set.privMemory")) : "…"}</li>
             <li>{t("set.priv3")}</li>
+            {status?.auto_end_score > 0 && <li>{t("set.privAuto", { n: status.auto_end_score })}</li>}
+            <li>{t("set.privOperators")}</li>
             <li>{status?.retention_days > 0 ? t("set.privRetention", { n: status.retention_days }) : t("set.privKeep")}</li>
           </ul>
           <button className="btn btn-danger" onClick={() => setConfirmAll(true)} disabled={deleting} aria-busy={deleting}>

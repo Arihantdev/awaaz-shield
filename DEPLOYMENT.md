@@ -63,6 +63,8 @@ When `frontend/dist` exists the backend serves it automatically (or set `FRONTEN
 | `EVALUATOR_RATE_PER_MINUTE` | Questions per person per minute. | `20` |
 | `COOKIE_SECURE` | `auto` (Secure over https), `true` or `false`. | `auto` |
 | `RETENTION_DAYS` | Automatically delete ended calls this many days after they started (checked hourly). `0` keeps them until a person deletes them. Also deletes the saved copy in Firestore. | `0` |
+| `AUTO_END_SCORE` | In-app voice calls are ended automatically when the caller's risk score goes above this number (1-99), and the call is escalated to operators. `0` turns the auto-cut off. | `75` |
+| `OPERATOR_EMAILS` | Comma-separated emails of operators. They see calls that were escalated (including auto-ended ones), can record a verdict, and cannot delete. Needs real Firebase sign-in; dev-login lets anyone claim an email. | empty |
 | `COOKIE_SAMESITE` | `lax`, or `none` for a separately hosted app (needs https). | `lax` |
 | `FRONTEND_DIST` | Folder with the built web app. | `frontend/dist` if built |
 | `DEEPGRAM_LANGUAGE`, `DEEPGRAM_MODEL`, `DEEPGRAM_KEYTERMS`, `DEEPGRAM_ENDPOINTING_MS` | Speech-to-text tuning. | see `.env` |

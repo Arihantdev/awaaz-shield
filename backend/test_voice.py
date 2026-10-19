@@ -78,6 +78,7 @@ def run_server():
 threading.Thread(target=run_server, daemon=True).start()
 started.wait(5)
 settings.DEEPGRAM_API_KEY = "test-key-123"
+settings.AUTO_END_SCORE = 0  # this script tests the relay itself; the automatic cut has its own script (test_autoend.py)
 settings.DEEPGRAM_URL = f"ws://127.0.0.1:{box['port']}/v1/listen"
 
 
@@ -230,9 +231,19 @@ with TestClient(app) as client:  # one shared event loop, like the real server
             import time; time.sleep(0.3)
             expect(dg["bytes"] == before, "with nobody on the other end the host's audio is no longer transcribed")
 
-            # host hangs up: the call ends
+            # host hangs up: the call ends. Wait for the server to finish BEFORE the test client closes the socket: the test
+            # client cancels the handler when its connection block exits, which a real server does not do.
             host.send_text(json.dumps({"type": "hangup"}))
-    import time; time.sleep(0.3)
+            import time
+            for _ in range(80):
+                if store.get(call_id).status.value == "ended":
+                    break
+                time.sleep(0.1)
+    import time
+    for _ in range(50):  # the server finishes transcription first (up to a few seconds), so wait for it rather than guess
+        if store.get(call_id).status.value == "ended":
+            break
+        time.sleep(0.1)
     expect(store.get(call_id).status.value == "ended", "the call ends when the host hangs up")
     expect(dg["closed"] >= 1, "CloseStream is sent so Deepgram flushes the last phrase")
     with client.websocket_connect(f"/ws/voice/{code}?role=guest", headers=GUEST_H) as ws:

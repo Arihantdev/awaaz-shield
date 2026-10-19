@@ -42,7 +42,16 @@ Date: 2026-10-19. Branch: `mobile-app`. This lists what was actually run and wha
 | **Your Mac** | `npm test` and `npm run dev` on macOS, GPU effects on real hardware. |
 | **Other languages** | the new screens have English text only; Hindi and the other six show English there. |
 
+## Automatic call cut (risk above 75)
+
+- `backend/test_autoend.py` (31 checks, in `npm run test:backend`): calm call not cut; scam call cut once; both sides told with the reason; call ended, escalated once and shared with operators; operator gets `auto_ended`; ordinary user gets 404; operator cannot delete; limit can be turned off; demo calls never cut.
+- Browser test (Chromium, fake Deepgram, fake microphone): operator on a laptop, caller and guest on phone-sized screens, plus an ordinary user. 14/14 passed. The operator sees the toast, the Auto-ended/Escalated tags and the detail banner; the ordinary user sees nothing.
+- Not tested: two real phones over the internet, live Deepgram audio, real Firebase sign-in for operators.
+
 ## Known limitations
+
+- A single very high-scoring line can end a call (false-positive risk). Tune or disable with `AUTO_END_SCORE`.
+- Operators only see escalated calls, and the auto-cut applies to in-app voice calls only.
 
 - Ordinary mobile-network (SIM) calls cannot be monitored on Android or iPhone (MOBILE.md).
 - The microphone usually stops when the screen locks or the app goes to the background.

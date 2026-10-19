@@ -51,7 +51,7 @@ call = s1.create_call("Test call", "simulated", owner_uid="u1", owner_email="op@
 s1.add_transcript_and_score(call.id, TranscriptChunk(text="Hello, this is from the bank, your account will be blocked", speaker="caller"))
 s1.add_transcript_and_score(call.id, TranscriptChunk(text="Share the otp 482913 and my card is 4111 1111 1111 1111, do not disconnect the call", speaker="caller"))
 s1.record_action(call.id, "escalated", "called customer on 9876543210", by_uid="u1")
-s1.end_call(call.id)
+s1.end_for_risk(call.id, 75)  # escalates (sent to operators) and ends the call, recording why
 ok(persistence.repo.flush(), "writes flushed")
 doc = db.data[("calls", call.id)]
 print("   doc:", {k: doc[k] for k in ("status","current_score","current_level","max_score","alert_count","disposition","owner_email")})
@@ -71,8 +71,9 @@ n = s2.load_from_persistence()
 ok(n == 1, "loaded 1 call after 'restart'")
 l = s2.get(call.id)
 ok(l.current_score == call.current_score and l.current_level == call.current_level, f"score/level restored ({l.current_score}, {l.current_level.value})")
-ok(len(l.transcript) == 2 and len(l.alerts) == len(call.alerts) and len(l.risk_history) == 2 and len(l.actions) == 1, "transcript/alerts/risk/actions restored")
+ok(len(l.transcript) == 2 and len(l.alerts) == len(call.alerts) and len(l.risk_history) == 2 and len(l.actions) == 2, "transcript/alerts/risk/actions restored")
 ok(l.disposition == "escalated" and l.owner_email == "op@example.com", "disposition + owner restored")
+ok(l.ended_reason == "auto_risk" and l.ended_threshold == 75 and l.shared_with_operators is True, "auto-end reason, limit and operator sharing restored")
 ok(isinstance(l.started_at, str) and "T" in l.started_at, "timestamps back to ISO strings")
 l.model_dump_json()  # serialisable for API/websocket
 ok(s2.analytics()["monitored_calls"] == 1, "analytics sees loaded call")

@@ -118,6 +118,17 @@ export default function Dashboard() {
           }
           break;
         }
+        case "auto_ended": {
+          refreshAnalytics();
+          const label = callsRef.current.find((c) => c.id === event.call_id)?.label || tRef.current("dash.aCall");
+          toast.error(tRef.current("dash.autoEnded", { label }), {
+            description: tRef.current("dash.autoEndedDesc", { score: event.score, limit: event.limit }),
+            className: "risk-toast risk-critical",
+            duration: 20000,
+            action: { label: tRef.current("dash.open"), onClick: () => { setView("monitor"); setSelectedId(event.call_id); } },
+          });
+          break;
+        }
         case "call_deleted":
           setCalls((prev) => prev.filter((c) => c.id !== event.call_id));
           setSelectedId((cur) => (cur === event.call_id ? null : cur));

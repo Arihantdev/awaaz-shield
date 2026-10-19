@@ -37,6 +37,7 @@ class CallStore:
         self._subscribers: list[Callable[[dict], None]] = []
         self._category_memory: dict[str, set[str]] = {}
         self._participants: dict[str, set[str]] = {}  # call id -> uids that joined (in memory; the owner is on the call)
+        self._operators: set[str] = set()  # uids of signed-in people whose email is in OPERATOR_EMAILS
         self._lock = threading.RLock()
 
     # ---- access control ----
@@ -44,13 +45,23 @@ class CallStore:
         with self._lock:
             self._participants.setdefault(call_id, set()).add(uid)
 
+    def mark_operator(self, uid: str) -> None:
+        with self._lock:
+            self._operators.add(uid)
+
+    def is_operator(self, uid: str) -> bool:
+        return uid in self._operators
+
     def can_access(self, call: Call | None, uid: str) -> bool:
-        """Owner and joined participants only. Calls with no recorded owner (old data) stay visible."""
+        """Owner and joined participants, plus operators for calls that were escalated to them.
+        Calls with no recorded owner (old data) stay visible."""
         if call is None:
             return False
         if not settings.RESTRICT_CALL_ACCESS or not call.owner_uid:
             return True
-        return call.owner_uid == uid or uid in self._participants.get(call.id, ())
+        if call.owner_uid == uid or uid in self._participants.get(call.id, ()):
+            return True
+        return call.shared_with_operators and uid in self._operators
 
     def can_access_id(self, call_id: str, uid: str) -> bool:
         return self.can_access(self._calls.get(call_id), uid)
@@ -113,6 +124,24 @@ class CallStore:
         repo.save_call(call, self._category_memory.get(call_id, set()))
         self._publish({"type": "call_updated", "call": call.model_dump()})
         return call
+
+    def end_for_risk(self, call_id: str, limit: int) -> Call | None:
+        """Awaaz Shield cut this call because its risk score went above `limit`: escalate it to the operators and end it."""
+        call = self._calls.get(call_id)
+        if not call:
+            return None
+        score = call.current_score
+        with self._lock:
+            call.ended_reason = "auto_risk"
+            call.ended_threshold = limit
+        self.record_action(
+            call_id, "escalated",
+            f"Ended automatically by Awaaz Shield: the risk score reached {score}, above the limit of {limit}. Sent to an operator.",
+            by_uid="system",
+        )
+        ended = self.end_call(call_id)
+        self._publish({"type": "auto_ended", "call_id": call_id, "score": score, "limit": limit})
+        return ended
 
     # ---- deletion ----
     def can_delete(self, call: Call | None, uid: str) -> bool:
@@ -181,6 +210,8 @@ class CallStore:
         call = self._calls.get(call_id)
         if not call:
             return None
+        if action_type == "escalated":
+            call.shared_with_operators = True  # from now on operators can see it, even after later verdicts
         action = OperatorAction(call_id=call_id, type=action_type, note=note, by_uid=by_uid)
         call.actions.append(action)
         repo.add_action(call_id, action)

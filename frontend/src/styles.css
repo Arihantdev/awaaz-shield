@@ -977,3 +977,13 @@ html[data-ui="mobile"] .m-detail .side { margin-top: 14px; }
 html[data-ui="mobile"] .m-detail .side .block { padding: 16px; }
 /* toasts sit above the tab bar on a phone */
 html[data-ui="mobile"] [data-sonner-toaster] { bottom: calc(76px + env(safe-area-inset-bottom)) !important; }
+
+/* ---- automatic cut of a risky voice call ---- */
+.vc-cut { border: 1px solid color-mix(in srgb, var(--risk-critical) 55%, transparent); background: color-mix(in srgb, var(--risk-critical) 10%, transparent); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.vc-cut b { color: var(--risk-critical); font-family: var(--font-display); }
+.vc-cut p { color: var(--text); }
+.auto-ended { display: flex; gap: 12px; align-items: flex-start; margin: 12px 0; padding: 12px 14px; border-radius: 12px; color: var(--risk-critical);
+  border: 1px solid color-mix(in srgb, var(--risk-critical) 50%, transparent); background: color-mix(in srgb, var(--risk-critical) 10%, transparent); }
+.auto-ended div { display: flex; flex-direction: column; gap: 2px; }
+.auto-ended b { font-family: var(--font-display); }
+.auto-ended span { color: var(--text); font-size: 13px; }

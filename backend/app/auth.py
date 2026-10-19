@@ -101,7 +101,12 @@ def read_session_token(token: str) -> Identity:
         payload = _serializer.loads(token, max_age=SESSION_MAX_AGE_SECONDS)
     except BadSignature as exc:
         raise HTTPException(status_code=401, detail="Session invalid or expired.") from exc
-    return Identity(uid=payload["uid"], email=payload["email"], dev_mode=payload["dev_mode"])
+    identity = Identity(uid=payload["uid"], email=payload["email"], dev_mode=payload["dev_mode"])
+    if identity.email and identity.email.lower() in settings.operator_emails:
+        from .store import store  # local import: the store does not depend on auth, keep it that way
+
+        store.mark_operator(identity.uid)
+    return identity
 
 
 def require_session(request: Request) -> Identity:

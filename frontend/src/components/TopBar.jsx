@@ -37,6 +37,7 @@ export default function TopBar({ analytics, wsStatus, onPalette }) {
           <span className="email" title={identity.email}>
             {identity.email}
             {identity.dev_mode && <span className="badge-muted" style={{ marginLeft: 6 }}>{t("top.devMode")}</span>}
+            {identity.operator && <span className="badge-muted" style={{ marginLeft: 6 }}>{t("top.operator")}</span>}
           </span>
         )}
         <button className="btn btn-ghost btn-sm" onClick={logout}><LogOut size={14} aria-hidden="true" />{t("top.logout")}</button>

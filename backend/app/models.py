@@ -132,6 +132,9 @@ class Call(BaseModel):
     disposition: Optional[str] = None  # last operator verdict: flagged | escalated | dismissed
     notice_given: bool = False  # phone calls: the "this call is analysed" notice was issued to both parties
     signals: list[str] = Field(default_factory=list)  # scam tactic categories seen so far (for linking similar calls)
+    ended_reason: Optional[str] = None  # "auto_risk": Awaaz Shield cut the call because the score went too high
+    ended_threshold: Optional[int] = None  # the limit that was crossed
+    shared_with_operators: bool = False  # escalated: operators may see this call (set once, never cleared)
 
 
 class CreateCallRequest(BaseModel):

@@ -36,6 +36,8 @@ export default function CallRoom() {
   const [joinCode, setJoinCode] = useState(normaliseCode(params.get("join")));
   const [call, setCall] = useState(FRESH);
   const [endedWhy, setEndedWhy] = useState("you");
+  const [cut, setCut] = useState(null); // { score, limit } when Awaaz Shield ended the call because the risk was too high
+  const [autoEnd, setAutoEnd] = useState(0); // the limit the server uses (0 = off), shown in the notice
   const [elapsed, setElapsed] = useState(0);
   const [copied, setCopied] = useState("");
   const session = useRef(null);
@@ -48,6 +50,7 @@ export default function CallRoom() {
   useTabLock(phase === "connecting" || phase === "call");
 
   const supported = voiceSupported();
+  useEffect(() => { api.status().then((s) => setAutoEnd(s?.auto_end_score || 0)).catch(() => {}); }, []);
 
   const releaseWake = () => { try { wake.current?.release(); } catch { /* ignore */ } wake.current = null; };
   const finish = useCallback((why) => {
@@ -119,7 +122,8 @@ export default function CallRoom() {
         if (m.code === "stt_unavailable") setCall((c) => ({ ...c, sttOff: true }));
         break;
       case "ended":
-        finish("host");
+        if (m.reason === "risk_threshold") { setCut({ score: m.score, limit: m.limit }); finish("risk"); }
+        else finish("host");
         break;
       case "error":
         session.current?.stop();
@@ -215,6 +219,7 @@ export default function CallRoom() {
     setRoom(null);
     setErr("");
     setCall(FRESH);
+    setCut(null);
     setJoinCode("");
   }
 
@@ -287,6 +292,7 @@ export default function CallRoom() {
               <li>{t("voice.notice2")}</li>
               <li>{t("voice.notice3")}</li>
               <li>{t("voice.notice4")}</li>
+              {autoEnd > 0 && <li>{t("voice.notice5", { n: autoEnd })}</li>}
             </ul>
             {role === "host" && (
               <div className="vc-codebox" aria-live="polite">
@@ -384,7 +390,14 @@ export default function CallRoom() {
         {phase === "ended" && (
           <section className="vc-card vc-ended">
             <h2><PhoneOff size={18} aria-hidden="true" />{t("voice.ended")}</h2>
-            <p className="muted">{endedWhy === "host" ? t("voice.endedByHost") : endedWhy === "lost" ? t("voice.endedLost") : t("voice.endedYou")}</p>
+            {endedWhy === "risk" ? (
+              <div className="vc-cut" role="alert">
+                <b>{t("voice.cutTitle")}</b>
+                <p>{t("voice.cutBody", { score: cut?.score ?? "", limit: cut?.limit ?? "" })}</p>
+              </div>
+            ) : (
+              <p className="muted">{endedWhy === "host" ? t("voice.endedByHost") : endedWhy === "lost" ? t("voice.endedLost") : t("voice.endedYou")}</p>
+            )}
             {err && <p className="msg-error" role="alert">{err}</p>}
             <div className="vc-actions">
               <button className="btn" onClick={() => navigate("/dashboard")}>{t("voice.toDashboard")}</button>

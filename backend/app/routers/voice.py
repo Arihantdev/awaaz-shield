@@ -19,7 +19,9 @@ Messages to the browser (JSON text unless noted):
   {"type":"caption","speaker":"caller"|"agent","text","final":bool}
   {"type":"risk","score","level"}                                  after every finished phrase
   {"type":"notice","code":"stt_unavailable","message"}             the call works, but is not transcribed
-  {"type":"ended","reason"}                                        then the socket closes
+  {"type":"ended","reason"}                                        then the socket closes. reason: "host_left", or
+                                                                   "risk_threshold" (+ "score","limit"): the call was cut
+                                                                   automatically because the caller's score went too high
   {"type":"error","code","message"}                                then the socket closes
   binary frames                                                    the other person's audio (PCM16 mono 16 kHz)
 """
@@ -101,6 +103,7 @@ class Room:
         self.is_live = False
         self._live_event: Optional[asyncio.Event] = None
         self.ever_live = False
+        self.end_reason: Optional[str] = None  # "risk" when Awaaz Shield cut the call
 
     @property
     def live_event(self) -> asyncio.Event:
@@ -248,7 +251,7 @@ async def _stt_worker(room: Room, p: Participant) -> None:
                 continue
             alts = (data.get("channel") or {}).get("alternatives") or []
             text = ((alts[0].get("transcript") if alts else "") or "").strip()
-            if not text:
+            if not text or room.ended:
                 continue
             if not data.get("is_final"):
                 room.broadcast({"type": "caption", "speaker": p.speaker.value, "text": text, "final": False})
@@ -259,6 +262,9 @@ async def _stt_worker(room: Room, p: Participant) -> None:
             room.broadcast({"type": "caption", "speaker": p.speaker.value, "text": text, "final": True})
             if updated:
                 room.broadcast({"type": "risk", "score": updated.current_score, "level": updated.current_level.value})
+                limit = settings.auto_end_score
+                if limit and updated.current_score > limit and not room.ended:
+                    await _auto_end(room, updated.current_score, limit)
     except Exception as exc:  # noqa: BLE001 - the call itself must survive a transcription failure
         logger.warning("Transcription for %s stopped: %r", p.role, exc)
     finally:
@@ -268,6 +274,21 @@ async def _stt_worker(room: Room, p: Participant) -> None:
             await upstream.close()
         except Exception:  # noqa: BLE001
             pass
+
+
+async def _auto_end(room: Room, score: int, limit: int) -> None:
+    """The caller's risk score went above the limit: tell both people why, hang up on both, and send the call to the operators.
+    Both are told BEFORE the call is saved, so the cut is immediate even if storage is slow."""
+    if room.ended:
+        return
+    room.ended = True
+    room.end_reason = "risk"
+    room.recompute_live()  # an ended room is never live: no more audio is relayed or transcribed
+    room.broadcast({"type": "ended", "reason": "risk_threshold", "score": score, "limit": limit})
+    for p in list(room.parts.values()):
+        p.close_after_flush()
+    logger.warning("Voice call %s ended automatically: score %d is above the limit of %d", room.call_id, score, limit)
+    await asyncio.to_thread(store.end_for_risk, room.call_id, limit)
 
 
 async def _finish_stt(p: Participant, task: asyncio.Task) -> None:
@@ -407,7 +428,9 @@ async def voice_socket(websocket: WebSocket, code: str, role: str = "guest"):
         room.recompute_live()
         other = room.peer_of(role)
         await _finish_stt(me, stt_task)
-        if role == "host":
+        if room.end_reason == "risk":
+            pass  # already told both people and saved by _auto_end: do not say anything else or end the call a second time
+        elif role == "host":
             room.ended = True
             if other:
                 other.send_json({"type": "ended", "reason": "host_left"})

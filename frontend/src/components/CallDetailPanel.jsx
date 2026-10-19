@@ -159,6 +159,16 @@ export default function CallDetailPanel({ call, onChanged, deepgramAvailable = f
             </div>
           </div>
 
+          {call.ended_reason === "auto_risk" && (
+            <div className="auto-ended" role="alert">
+              <ShieldAlert size={18} aria-hidden="true" />
+              <div>
+                <b>{t("call.autoEndedTitle")}</b>
+                <span>{t("call.autoEndedBody", { score: call.current_score, limit: call.ended_threshold })}</span>
+              </div>
+            </div>
+          )}
+
           <div className="summary-body">
             <RiskGauge score={call.current_score} level={call.current_level} />
             <div className="summary-copy" aria-live="polite">

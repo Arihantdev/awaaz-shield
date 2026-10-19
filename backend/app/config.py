@@ -62,6 +62,12 @@ class Settings:
 
     # When true (recommended), a call is visible only to the person who started it and people who joined it.
     RESTRICT_CALL_ACCESS: bool = _bool("RESTRICT_CALL_ACCESS", True)
+    # In-app voice calls: when the caller's risk score goes ABOVE this, Awaaz Shield ends the call for both people and sends it
+    # to the operators. 0 turns this off. (Only voice-room calls: demo, sample and text calls are never cut.)
+    AUTO_END_SCORE: int = int(os.getenv("AUTO_END_SCORE", "75"))
+    # Comma-separated emails of operators. An operator sees calls that were escalated (by the auto-cut or by a person),
+    # not everyone's calls. Needs real sign-in (Firebase) so that an email can be trusted.
+    OPERATOR_EMAILS: str = os.getenv("OPERATOR_EMAILS", "")
     # Cap on risk-evaluator questions per person per minute (protects Claude spend).
     EVALUATOR_RATE_PER_MINUTE: int = int(os.getenv("EVALUATOR_RATE_PER_MINUTE", "20"))
 
@@ -95,6 +101,15 @@ class Settings:
         return (30, 55, 80)
 
     @property
+    def auto_end_score(self) -> int:
+        """The score above which a voice call is cut; 0 = off. Anything outside 0-99 is treated as off."""
+        return self.AUTO_END_SCORE if 1 <= self.AUTO_END_SCORE <= 99 else 0
+
+    @property
+    def operator_emails(self) -> set[str]:
+        return {e.strip().lower() for e in self.OPERATOR_EMAILS.split(",") if e.strip()}
+
+    @property
     def claude_configured(self) -> bool:
         return bool(self.ANTHROPIC_API_KEY)
 
@@ -126,6 +141,7 @@ class Settings:
             "risk_thresholds": dict(zip(("medium", "high", "critical"), self.risk_thresholds)),
             "call_access_restricted": self.RESTRICT_CALL_ACCESS,
             "retention_days": max(0, self.RETENTION_DAYS),
+            "auto_end_score": self.auto_end_score,
         }
 
 

@@ -60,6 +60,7 @@ export default function CallList({ calls, selectedId, onSelect, filter, onFilter
             <div className="row meta">
               <RiskBadge score={call.current_score} level={call.current_level} />
               <span className="row" style={{ gap: 8 }}>
+                {call.ended_reason === "auto_risk" && <span className="badge-muted disp disp-escalated">{t("list.autoEnded")}</span>}
                 {call.disposition && <span className={`badge-muted disp disp-${call.disposition}`}>{t(`disp.${call.disposition}`)}</span>}
                 <span className="mono id">{call.id.slice(0, 8)}</span>
               </span>

@@ -207,6 +207,9 @@ class FirestoreRepo:
                 "matched_patterns": sorted(matched_patterns),
                 "alert_count": len(call.alerts),
                 "disposition": call.disposition,
+                "ended_reason": call.ended_reason,
+                "ended_threshold": call.ended_threshold,
+                "shared_with_operators": call.shared_with_operators,
             },
         )
 
@@ -319,6 +322,9 @@ class FirestoreRepo:
             owner_uid=d.get("owner_uid", ""),
             owner_email=d.get("owner_email", ""),
             disposition=d.get("disposition"),
+            ended_reason=d.get("ended_reason"),
+            ended_threshold=d.get("ended_threshold"),
+            shared_with_operators=bool(d.get("shared_with_operators", False)),
         )
         return call, set(d.get("matched_patterns", []))
 
