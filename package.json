@@ -4,7 +4,9 @@
   "private": true,
   "description": "Awaaz Shield - live scam-call detection. One command starts the FastAPI backend and the React frontend.",
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "predev": "node scripts/setup.mjs",
     "dev": "concurrently --kill-others --kill-signal SIGTERM --names api,web --prefix-colors cyan,magenta --prefix \"[{name}]\" \"node scripts/run-backend.mjs\" \"node scripts/run-frontend.mjs\"",
@@ -16,7 +18,11 @@
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "node scripts/run-backend-tests.mjs",
     "test:frontend": "npm --prefix frontend test",
-    "postinstall": "node scripts/install-frontend.mjs"
+    "postinstall": "node scripts/install-frontend.mjs",
+    "android:install": "npm --prefix mobile install",
+    "android:sync": "npm --prefix frontend run build && npm --prefix mobile run sync",
+    "android:open": "npm --prefix mobile run open",
+    "android:apk": "npm --prefix mobile run apk"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

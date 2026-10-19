@@ -1,0 +1,13 @@
+**/node_modules
+**/__pycache__
+**/*.pyc
+backend/.venv
+backend/.env
+backend/firebase-service-account.json
+backend/data
+frontend/dist
+frontend/.env.local
+mobile
+.git
+*.pdf
+_backup-*

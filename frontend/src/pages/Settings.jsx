@@ -6,6 +6,7 @@ import { useT } from "../i18n";
 import PageShell from "../components/PageShell";
 import LanguageSelect from "../components/LanguageSelect";
 import Spinner from "../components/Spinner";
+import InstallHelp from "../components/InstallHelp";
 
 /** Everything here reports what is really configured; nothing is a switch that does not do anything. */
 export default function Settings() {
@@ -55,6 +56,8 @@ export default function Settings() {
           <div className="set-row"><span>{t("set.language")}</span><LanguageSelect /></div>
           <button className="btn" onClick={logout}><LogOut size={14} aria-hidden="true" />{t("top.logout")}</button>
         </section>
+
+        <InstallHelp />
 
         <section className="vc-card">
           <h2><Mic size={18} aria-hidden="true" />{t("set.mic")}</h2>

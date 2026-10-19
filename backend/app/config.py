@@ -65,6 +65,19 @@ class Settings:
     # Cap on risk-evaluator questions per person per minute (protects Claude spend).
     EVALUATOR_RATE_PER_MINUTE: int = int(os.getenv("EVALUATOR_RATE_PER_MINUTE", "20"))
 
+    # Dev-mode login (any email, no password) exists only so the app runs without Firebase on your own computer.
+    # A public server must set ALLOW_DEV_LOGIN=false: then, without Firebase, nobody can sign in instead of everybody.
+    ALLOW_DEV_LOGIN: bool = _bool("ALLOW_DEV_LOGIN", True)
+
+    # Session cookie. COOKIE_SECURE: "auto" (secure whenever the request arrived over https, also behind a proxy that
+    # sends X-Forwarded-Proto), "true" or "false". COOKIE_SAMESITE: lax (default, same-site web/PWA), or none (needs https;
+    # only for a separately hosted frontend such as an Android app that bundles the page).
+    COOKIE_SECURE: str = os.getenv("COOKIE_SECURE", "auto").strip().lower()
+    COOKIE_SAMESITE: str = os.getenv("COOKIE_SAMESITE", "lax").strip().lower()
+    # Folder holding the built frontend (frontend/dist). When it exists, the backend serves the web app too,
+    # so one address covers the page, the API and the call sockets.
+    FRONTEND_DIST: str = os.getenv("FRONTEND_DIST", "")
+
     # Firestore persistence (only active when Firebase itself is configured).
     FIRESTORE_ENABLED: bool = _bool("FIRESTORE_ENABLED", True)
     FIRESTORE_LOAD_LIMIT: int = int(os.getenv("FIRESTORE_LOAD_LIMIT", "50"))
@@ -106,7 +119,7 @@ class Settings:
             "email_verification_required": self.REQUIRE_EMAIL_VERIFIED,
             "deepgram_stt": self.deepgram_configured,
             "firestore_persistence": self.firestore_enabled,
-            "dev_mode_auth": not self.firebase_configured,
+            "dev_mode_auth": (not self.firebase_configured) and self.ALLOW_DEV_LOGIN,
             "risk_thresholds": dict(zip(("medium", "high", "critical"), self.risk_thresholds)),
             "call_access_restricted": self.RESTRICT_CALL_ACCESS,
         }

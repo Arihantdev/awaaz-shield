@@ -1,0 +1,31 @@
+# Render blueprint: one web service from the Dockerfile. Secrets are NOT in this file: set them in the Render dashboard.
+services:
+  - type: web
+    name: awaaz-shield
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_SECRET_KEY
+        generateValue: true          # a long random value, created once
+      - key: CORS_ORIGINS
+        value: https://awaaz-shield.onrender.com   # change to your real address
+      - key: FIREBASE_ENABLED
+        value: "true"                # needs the service-account secret file (see DEPLOYMENT.md)
+      - key: FIREBASE_SERVICE_ACCOUNT_PATH
+        value: /etc/secrets/firebase-service-account.json
+      - key: ALLOW_DEV_LOGIN
+        value: "false"               # never let anyone sign in with just an email on a public server
+      # Firebase web-app settings, built into the page (public identifiers). Copy them from the Firebase console.
+      - key: VITE_FIREBASE_API_KEY
+        sync: false
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: VITE_FIREBASE_PROJECT_ID
+        sync: false
+      - key: VITE_FIREBASE_APP_ID
+        sync: false
+      - key: DEEPGRAM_API_KEY
+        sync: false                  # you type it in the dashboard
+      - key: ANTHROPIC_API_KEY
+        sync: false                  # optional

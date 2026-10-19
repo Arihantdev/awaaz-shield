@@ -79,6 +79,8 @@ def verify_id_token(id_token: str) -> Identity:
 
 def dev_login(email: str) -> Identity:
     """Unverified local login used only while Firebase isn't configured."""
+    if not settings.ALLOW_DEV_LOGIN:
+        raise HTTPException(status_code=403, detail="Dev-mode login is turned off on this server. Sign in with Firebase.")
     if settings.firebase_configured:
         raise HTTPException(
             status_code=400,

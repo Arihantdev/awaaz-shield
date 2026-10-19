@@ -1,0 +1,19 @@
+{
+  "name": "awaaz-shield-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Android wrapper (Capacitor) around the Awaaz Shield web app. Needs Node 22+ and Android Studio.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "sync": "cap sync android",
+    "open": "cap open android",
+    "apk": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

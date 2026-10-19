@@ -80,3 +80,12 @@ This archive contains no carrier integration: no Twilio, Exotel or other telepho
 `backend/.env.example` and `frontend/.env.example` are safe templates. Add only the optional credentials you use; never add credentials to the repository or a shared ZIP. Firebase web config (`VITE_FIREBASE_*`) is public client configuration; secrets such as the service-account JSON stay in `backend/` only.
 
 More detail is in [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md).
+
+## Phones, deployment and tests
+
+- **[MOBILE.md](MOBILE.md)**: Android app (APK), iPhone Home Screen app, and exactly what can and cannot be monitored.
+- **[DEPLOYMENT.md](DEPLOYMENT.md)**: put the backend and web app on the internet (Render, Docker, or plain Python), with all settings.
+- **[TESTING_REPORT.md](TESTING_REPORT.md)**: what was tested and what was not.
+- **[SPEAKERPHONE_TEST.md](SPEAKERPHONE_TEST.md)**: scripts and a log sheet for testing speech accuracy.
+
+New in this version: the risk-evaluator chat (ask about a call and get a score, warning signs and next steps), History and Settings screens, configurable risk bands, and per-call access control.

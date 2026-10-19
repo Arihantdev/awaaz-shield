@@ -1,7 +1,9 @@
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 
 from .config import settings
 from .routers import analytics, auth_routes, calls, consent, demo, stt, voice, ws
@@ -49,3 +51,40 @@ def status():
 @app.get("/api/health")
 def health():
     return {"ok": True}
+
+
+# ------------------------------------------------------------------ safe defaults for every response
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "microphone=(self), camera=(), geolocation=()")
+    if request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "").split(",")[0].strip() == "https":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
+    return response
+
+
+# ------------------------------------------------------------------ serve the built web app (optional)
+def _frontend_dir() -> str | None:
+    """frontend/dist (or FRONTEND_DIST) when it has been built. Then one address serves the page, the API and the sockets."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidate = settings.FRONTEND_DIST or os.path.join(here, "..", "..", "frontend", "dist")
+    candidate = os.path.abspath(candidate)
+    return candidate if os.path.isfile(os.path.join(candidate, "index.html")) else None
+
+
+_DIST = _frontend_dir()
+
+if _DIST:
+    @app.get("/{path:path}", include_in_schema=False)
+    def web_app(path: str):
+        # API and socket paths that did not match a route must stay real 404s, not the web page
+        if path.startswith(("api/", "ws/")) or path in ("api", "ws"):
+            return JSONResponse({"detail": "Not found."}, status_code=404)
+        target = os.path.abspath(os.path.join(_DIST, path))
+        if path and target.startswith(_DIST + os.sep) and os.path.isfile(target):
+            headers = {"Cache-Control": "public, max-age=31536000, immutable"} if path.startswith("assets/") else {"Cache-Control": "no-cache"}
+            return FileResponse(target, headers=headers)
+        return FileResponse(os.path.join(_DIST, "index.html"), headers={"Cache-Control": "no-cache"})  # single-page app routes

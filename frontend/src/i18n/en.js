@@ -509,4 +509,13 @@ export default {
   "set.lim2": "It cannot listen to an ordinary mobile-network call. Android and iPhone do not let apps record those calls.",
   "set.lim3": "On iPhone and in a browser, the microphone usually stops when the screen locks or the app goes to the background. Keep the app open during a call.",
   "set.lim4": "A score is help for a person, not proof that a call is safe or a scam.",
+  // ---- install to home screen
+  "inst.title": "Install the app",
+  "inst.done": "Awaaz Shield is installed on this device.",
+  "inst.button": "Install Awaaz Shield",
+  "inst.ios0": "On iPhone, open this page in Safari (not inside another app).",
+  "inst.ios1": "Tap the Share button at the bottom of Safari.",
+  "inst.ios2": "Choose Add to Home Screen, then Add.",
+  "inst.ios3": "Open Awaaz Shield from your Home Screen. It opens full screen like an app and keeps you signed in.",
+  "inst.other": "In Chrome, open the menu and choose Install app or Add to Home screen.",
 };

@@ -8,7 +8,7 @@ if (!existsSync(VENV_PY)) {
   process.exit(1);
 }
 let code = 0;
-for (const file of ["smoke_test.py", "test_persistence.py", "test_stt.py", "test_voice.py", "test_evaluator.py", "eval_risk.py"]) {
+for (const file of ["smoke_test.py", "test_persistence.py", "test_stt.py", "test_voice.py", "test_evaluator.py", "test_deploy.py", "eval_risk.py"]) {
   console.log(`\n=== ${file} ===`);
   const r = spawnSync(VENV_PY, [file], { cwd: BACKEND, stdio: "inherit" });
   if (r.status !== 0) code = r.status ?? 1;
