@@ -10,6 +10,7 @@ import Spinner from "../components/Spinner";
 import InstallHelp from "../components/InstallHelp";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { friendlyError } from "../lib/errors";
+import { readUiPref, setUiPref } from "../hooks/useIsMobile";
 
 /** Everything here reports what is really configured; nothing is a switch that does not do anything. */
 export default function Settings() {
@@ -20,6 +21,7 @@ export default function Settings() {
   const [testing, setTesting] = useState(false);
   const [micMsg, setMicMsg] = useState("");
   const [confirmAll, setConfirmAll] = useState(false);
+  const [uiPref, setUiPrefState] = useState(readUiPref);
   const [deleting, setDeleting] = useState(false);
 
   async function deleteAll() {
@@ -72,6 +74,16 @@ export default function Settings() {
           <p>{identity?.email}{identity?.dev_mode && <span className="badge-muted" style={{ marginLeft: 8 }}>{t("top.devMode")}</span>}</p>
           <div className="set-row"><span>{t("set.language")}</span><LanguageSelect /></div>
           <button className="btn" onClick={logout}><LogOut size={14} aria-hidden="true" />{t("top.logout")}</button>
+        </section>
+
+        <section className="vc-card">
+          <h2>{t("set.layout")}</h2>
+          <div className="seg" role="group" aria-label={t("set.layout")}>
+            {[["auto", "set.layoutAuto"], ["mobile", "set.layoutMobile"], ["desktop", "set.layoutDesktop"]].map(([v, k]) => (
+              <button key={v} className="chip" aria-pressed={uiPref === v} onClick={() => { setUiPref(v); setUiPrefState(v); }}>{t(k)}</button>
+            ))}
+          </div>
+          <p className="muted">{t("set.layoutHelp")}</p>
         </section>
 
         <InstallHelp />

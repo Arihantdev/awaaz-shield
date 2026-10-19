@@ -4,12 +4,15 @@ import { Mark } from "./TopBar";
 import LanguageSelect from "./LanguageSelect";
 import { useAuth } from "../context/AuthContext";
 import { useT } from "../i18n";
+import useIsMobile from "../hooks/useIsMobile";
 
 /** Header + page frame shared by the secondary screens (History, Settings). Reuses the call-page layout. */
 export default function PageShell({ title, children }) {
   const t = useT();
   const navigate = useNavigate();
   const { identity } = useAuth();
+  const mobile = useIsMobile();
+  if (mobile) return <div className="m-page"><h1 className="m-title">{title}</h1>{children}</div>;
   return (
     <div className="vc-page">
       <header className="vc-top">

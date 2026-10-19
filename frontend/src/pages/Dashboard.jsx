@@ -21,6 +21,8 @@ import DemoControls from "../components/DemoControls";
 import CommandPalette from "../components/CommandPalette";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CommandCenter from "../components/command/CommandCenter";
+import MobileDashboard from "../components/mobile/MobileDashboard";
+import useIsMobile from "../hooks/useIsMobile";
 
 // ECharts only downloads when the Insights view is opened.
 const Insights = lazy(() => import("./Insights"));
@@ -33,6 +35,7 @@ const readNavOpen = () => {
 export default function Dashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [calls, setCalls] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -228,6 +231,25 @@ export default function Dashboard() {
       <DemoControls onStart={startDemoCall} onRequestReset={() => setConfirmReset(true)} onLoadSamples={loadSamples} loadingSamples={loadingSamples} />
     </aside>
   );
+
+  if (isMobile) {
+    return (
+      <MobileDashboard
+        calls={calls}
+        loaded={loaded}
+        analytics={analytics}
+        wsStatus={wsStatus}
+        onSelect={setSelectedId}
+        onChanged={refreshSelectedCall}
+        deepgramAvailable={!!server.status?.deepgram_stt}
+        onStartDemo={startDemoCall}
+        onLoadSamples={loadSamples}
+        loadingSamples={loadingSamples}
+        filter={filter}
+        onFilter={setFilter}
+      />
+    );
+  }
 
   return (
     <div className="app">

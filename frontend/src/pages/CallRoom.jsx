@@ -10,6 +10,7 @@ import LanguageSelect from "../components/LanguageSelect";
 import { VoiceSession } from "../lib/voiceSession";
 import { voiceSupported } from "../lib/voiceAudio";
 import EvaluatorChat from "../components/EvaluatorChat";
+import { useTabLock } from "../components/mobile/MobileFrame";
 
 /**
  * In-app voice call. The person who starts it is the "caller" (the side that is scored); the person who joins with
@@ -44,6 +45,7 @@ export default function CallRoom() {
   const meterThem = useRef(null);
   const capsRef = useRef(null);
   phaseRef.current = phase;
+  useTabLock(phase === "connecting" || phase === "call");
 
   const supported = voiceSupported();
 

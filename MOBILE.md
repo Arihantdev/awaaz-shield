@@ -60,3 +60,7 @@ Settings > Install the app in the app shows the same steps. If the microphone pr
 ## Testing on a phone before deploying
 
 `npm run dev:share` starts everything on your network with the page, API and sockets on one port. Put a free https tunnel (cloudflared or ngrok) in front of port 5173 and open that address on the phone. The README section "Two phones" has the details.
+
+## Two interfaces
+
+The web app picks its layout by screen size: a phone layout (bottom tabs, one task per screen) on narrow screens, and the laptop layout (side rail and panels) on wide ones. Settings → Layout can force either one on a device. The Android app and the iPhone home-screen app both use the phone layout.

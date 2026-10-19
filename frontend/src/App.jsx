@@ -7,6 +7,8 @@ import History from "./pages/History";
 import Settings from "./pages/Settings";
 import ConsentGate from "./components/ConsentGate";
 import useSpotlight from "./hooks/useSpotlight";
+import useIsMobile from "./hooks/useIsMobile";
+import MobileFrame from "./components/mobile/MobileFrame";
 
 function PrivateRoute({ children }) {
   const { identity, checking } = useAuth();
@@ -22,6 +24,8 @@ function PrivateRoute({ children }) {
 
 export default function App() {
   useSpotlight();
+  const mobile = useIsMobile();
+  const frame = (page) => (mobile ? <MobileFrame>{page}</MobileFrame> : page);
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -30,7 +34,7 @@ export default function App() {
         element={
           <PrivateRoute>
             <ConsentGate>
-              <Dashboard />
+              {frame(<Dashboard />)}
             </ConsentGate>
           </PrivateRoute>
         }
@@ -40,7 +44,7 @@ export default function App() {
         element={
           <PrivateRoute>
             <ConsentGate>
-              <CallRoom />
+              {frame(<CallRoom />)}
             </ConsentGate>
           </PrivateRoute>
         }
@@ -50,7 +54,7 @@ export default function App() {
         element={
           <PrivateRoute>
             <ConsentGate>
-              <History />
+              {frame(<History />)}
             </ConsentGate>
           </PrivateRoute>
         }
@@ -60,7 +64,7 @@ export default function App() {
         element={
           <PrivateRoute>
             <ConsentGate>
-              <Settings />
+              {frame(<Settings />)}
             </ConsentGate>
           </PrivateRoute>
         }

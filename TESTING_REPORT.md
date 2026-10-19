@@ -23,6 +23,8 @@ Date: 2026-10-19. Branch: `mobile-app`. This lists what was actually run and wha
 
 **Delete controls in the browser (10 more checks, desktop):** delete one call from History, delete all my ended calls (a call still in progress is kept and the server agrees), Settings delete-all with its confirmation and message, deleting from the call panel removes it from the list live, no page errors. Checked at 390 px by screenshot only.
 
+**Phone interface (new):** the app now has two separate interfaces. Narrow screens (and phones held sideways) get a phone layout with a bottom tab bar (Home, Calls, Voice, History, Settings), a Home screen showing what needs attention, and each call opening full screen. Laptops keep the existing layout. Checked in headless Chromium with an iPhone 13 profile: 14 checks pass, including the correct layout for each screen size, five tabs, a call opening and going back, no sideways scrolling on any of the five screens, and no page errors. I looked at screenshots of every phone screen. Not tested on a real phone. Settings has a Layout switch (Automatic, Phone, Laptop) in case the wrong one appears.
+
 **Android project:** generated with Capacitor 8.5.3. `cap sync` verified in both modes (deployed-address mode and bundled mode), and an `http://` address is refused. The manifest, strings and launcher background parse as valid XML.
 
 ## NOT verified
