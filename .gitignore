@@ -1,0 +1,23 @@
+# backend
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.env
+backend/firebase-service-account.json
+*.pyc
+
+# root tooling
+node_modules/
+backend/.venv/
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# os
+.DS_Store
+backend/data/
+
+# local safety backup
+_backup-*/
