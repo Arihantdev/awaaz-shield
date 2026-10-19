@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from .. import auth
 from ..config import settings
-from ..models import ActionRequest, Call, CreateCallRequest, EvaluateRequest, Evaluation, IngestRequest, TranscriptChunk
+from ..models import ActionRequest, Call, CallStatus, CreateCallRequest, EvaluateRequest, Evaluation, IngestRequest, TranscriptChunk
 from ..risk import evaluator
 from ..store import store
 
@@ -67,6 +67,33 @@ def record_action(call_id: str, body: ActionRequest, identity: auth.Identity = D
     if not action:
         raise HTTPException(status_code=404, detail=_NOT_FOUND)
     return action
+
+
+@router.delete("/{call_id}")
+def delete_call(call_id: str, identity: auth.Identity = Depends(auth.require_session)):
+    """Permanently delete a call, its transcript and its risk history, here and in saved storage. Owner only, ended calls only."""
+    call = _own_call(call_id, identity)
+    if not store.can_delete(call, identity.uid):
+        raise HTTPException(status_code=403, detail="Only the person who started this call can delete it.")
+    if call.status == CallStatus.active:
+        raise HTTPException(status_code=409, detail="This call is still in progress. End it before deleting it.")
+    try:
+        deleted = store.delete_call(call_id)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Could not delete right now. Nothing was removed; please try again.") from None
+    if not deleted:
+        raise HTTPException(status_code=404, detail=_NOT_FOUND)
+    return {"ok": True}
+
+
+@router.delete("")
+def delete_my_calls(identity: auth.Identity = Depends(auth.require_session)):
+    """Delete every ended call this person started. Calls still in progress are kept."""
+    try:
+        deleted, skipped_active = store.delete_calls_of(identity.uid)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Could not delete right now. Some calls may remain; please try again.") from None
+    return {"deleted": deleted, "skipped_active": skipped_active}
 
 
 @router.post("/{call_id}/evaluate", response_model=Evaluation)

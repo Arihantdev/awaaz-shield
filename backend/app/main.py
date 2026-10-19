@@ -1,3 +1,5 @@
+import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -10,11 +12,25 @@ from .routers import analytics, auth_routes, calls, consent, demo, stt, voice, w
 from .store import store
 
 
+async def _retention_loop() -> None:
+    """Delete calls older than RETENTION_DAYS: shortly after start, then every hour."""
+    await asyncio.sleep(120)
+    while True:
+        try:
+            await asyncio.to_thread(store.purge_older_than, settings.RETENTION_DAYS)
+        except Exception:  # noqa: BLE001 - a failed sweep must never stop the app
+            logging.getLogger("awaaz.retention").exception("Retention sweep failed")
+        await asyncio.sleep(3600)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     # Load previously saved calls from Firestore in the background (no-op if persistence is off).
     store.load_from_persistence_async()
+    retention = asyncio.create_task(_retention_loop()) if settings.RETENTION_DAYS > 0 else None
     yield
+    if retention:
+        retention.cancel()
     # On shutdown, give queued Firestore writes a moment to finish so the last lines are not lost.
     from .persistence import repo
     repo.flush(5)

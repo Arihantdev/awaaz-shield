@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { LogOut, Mic } from "lucide-react";
+import { LogOut, Mic, Trash2 } from "lucide-react";
+import { toast, Toaster } from "sonner";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useT } from "../i18n";
@@ -7,6 +8,8 @@ import PageShell from "../components/PageShell";
 import LanguageSelect from "../components/LanguageSelect";
 import Spinner from "../components/Spinner";
 import InstallHelp from "../components/InstallHelp";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { friendlyError } from "../lib/errors";
 
 /** Everything here reports what is really configured; nothing is a switch that does not do anything. */
 export default function Settings() {
@@ -16,6 +19,20 @@ export default function Settings() {
   const [mic, setMic] = useState("unknown"); // granted | denied | prompt | unknown | unsupported
   const [testing, setTesting] = useState(false);
   const [micMsg, setMicMsg] = useState("");
+  const [confirmAll, setConfirmAll] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function deleteAll() {
+    setDeleting(true);
+    try {
+      const r = await api.deleteAllCalls();
+      toast.success(t("del.doneAll", { n: r.deleted }) + (r.skipped_active ? " " + t("del.skipped", { n: r.skipped_active }) : ""));
+    } catch (e) {
+      toast.error(t("del.failed"), { description: friendlyError(t, e) });
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   useEffect(() => {
     api.status().then(setStatus).catch(() => setStatus(false));
@@ -75,8 +92,12 @@ export default function Settings() {
             <li>{t("set.priv2")}</li>
             <li>{status ? (status.firestore_persistence ? t("set.privSaved") : t("set.privMemory")) : "…"}</li>
             <li>{t("set.priv3")}</li>
-            <li>{t("set.privNoDelete")}</li>
+            <li>{status?.retention_days > 0 ? t("set.privRetention", { n: status.retention_days }) : t("set.privKeep")}</li>
           </ul>
+          <button className="btn btn-danger" onClick={() => setConfirmAll(true)} disabled={deleting} aria-busy={deleting}>
+            {deleting ? <Spinner /> : <Trash2 size={14} aria-hidden="true" />}{t("del.settingsBtn")}
+          </button>
+          <p className="muted">{t("del.settingsHelp")}</p>
         </section>
 
         <section className="vc-card">
@@ -102,6 +123,16 @@ export default function Settings() {
           </ul>
         </section>
       </div>
+      <ConfirmDialog
+        open={confirmAll}
+        onOpenChange={setConfirmAll}
+        title={t("del.allTitle")}
+        description={t("del.allDescNoCount")}
+        confirmLabel={t("del.allConfirm")}
+        danger
+        onConfirm={deleteAll}
+      />
+      <Toaster position="bottom-right" theme="dark" visibleToasts={3} closeButton />
     </PageShell>
   );
 }

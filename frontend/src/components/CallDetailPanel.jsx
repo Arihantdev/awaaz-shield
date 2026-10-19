@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
-import { ArrowDown, Ban, Undo2, FlaskConical, Flag, Megaphone, Mic, PhoneCall, PhoneOff, Phone, Send, ShieldAlert, StickyNote } from "lucide-react";
+import { ArrowDown, Ban, Trash2, Undo2, FlaskConical, Flag, Megaphone, Mic, PhoneCall, PhoneOff, Phone, Send, ShieldAlert, StickyNote } from "lucide-react";
 import { api } from "../api";
 import { friendlyError } from "../lib/errors";
 import { signalLabel, useI18n } from "../i18n";
@@ -12,6 +12,8 @@ import MicCapture from "./MicCapture";
 import LiveAudio from "./LiveAudio";
 import Spinner from "./Spinner";
 import EvaluatorChat from "./EvaluatorChat";
+import ConfirmDialog from "./ConfirmDialog";
+import { useAuth } from "../context/AuthContext";
 import SignalWave from "./SignalWave";
 import { micLevel } from "../lib/micLevel";
 
@@ -35,6 +37,9 @@ export default function CallDetailPanel({ call, onChanged, deepgramAvailable = f
   const [busyKey, setBusyKey] = useState(null); // one operator action at a time, so a double click cannot record twice
   const [listening, setListening] = useState(false);
   const [unseen, setUnseen] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { identity } = useAuth();
+  const canDelete = call.status === "ended" && (!call.owner_uid || call.owner_uid === identity?.uid);
   const chatRef = useRef(null);
   const stickRef = useRef(true); // follow new lines only while the operator is already at the bottom
   const seenLines = useRef(0);
@@ -267,6 +272,13 @@ export default function CallDetailPanel({ call, onChanged, deepgramAvailable = f
             <input value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder={t("call.notePlaceholder")} aria-label={t("call.noteAria")} style={{ flex: 1 }} />
             <button className="btn btn-sm" disabled={!noteDraft.trim() || !!busyKey} onClick={() => recordAction("note")}><StickyNote size={14} aria-hidden="true" />{t("call.addNote")}</button>
           </div>
+          {canDelete && (
+            <div className="act-row" style={{ marginTop: 10 }}>
+              <button className="btn btn-sm btn-danger" disabled={!!busyKey} onClick={() => setConfirmDelete(true)}>
+                <Trash2 size={14} aria-hidden="true" />{t("del.button")}
+              </button>
+            </div>
+          )}
           {call.actions.length > 0 && (
             <ul className="log">
               {[...call.actions].reverse().map((a) => (
@@ -278,6 +290,15 @@ export default function CallDetailPanel({ call, onChanged, deepgramAvailable = f
             </ul>
           )}
         </section>
+        <ConfirmDialog
+          open={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title={t("del.title")}
+          description={t("del.desc")}
+          confirmLabel={t("del.confirm")}
+          danger
+          onConfirm={() => guarded("delete", async () => { await api.deleteCall(call.id); toast.success(t("del.done")); })}
+        />
         <section className="block">
           <h3>{t("ev.title")}</h3>
           <EvaluatorChat key={call.id} callId={call.id} />

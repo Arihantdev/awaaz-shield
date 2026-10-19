@@ -9,6 +9,7 @@ unavailable the app keeps working from memory.
 """
 import logging
 import threading
+from datetime import datetime, timedelta, timezone
 from typing import Callable
 
 from .config import settings
@@ -112,6 +113,69 @@ class CallStore:
         repo.save_call(call, self._category_memory.get(call_id, set()))
         self._publish({"type": "call_updated", "call": call.model_dump()})
         return call
+
+    # ---- deletion ----
+    def can_delete(self, call: Call | None, uid: str) -> bool:
+        """Only the person who started a call may delete it (joined people may not erase the owner's record)."""
+        if call is None or not self.can_access(call, uid):
+            return False
+        return call.owner_uid == uid or not call.owner_uid
+
+    def delete_call(self, call_id: str) -> bool:
+        """Remove a call from memory AND from saved storage. Returns False when there is no such call.
+
+        The saved copy is queued for deletion first: if that fails this raises and nothing is removed, so a call is never
+        reported deleted while its saved copy survives. Clients are told before it disappears (their access check needs the call)."""
+        with self._lock:
+            if call_id not in self._calls:
+                return False
+            repo.delete_call(call_id)
+            self._publish({"type": "call_deleted", "call_id": call_id})
+            self._calls.pop(call_id, None)
+            self._category_memory.pop(call_id, None)
+            self._participants.pop(call_id, None)
+        return True
+
+    def delete_calls_of(self, uid: str) -> tuple[int, int]:
+        """Delete every ENDED call this person started. Calls still in progress are left alone. Returns (deleted, skipped_active)."""
+        with self._lock:
+            mine = [c for c in self._calls.values() if self.can_delete(c, uid)]
+        deleted = skipped = 0
+        for c in mine:
+            if c.status == CallStatus.active:
+                skipped += 1
+            elif self.delete_call(c.id):
+                deleted += 1
+        return deleted, skipped
+
+    def purge_older_than(self, days: int) -> int:
+        """Retention: delete ended calls that ended more than `days` days ago, in memory and in saved storage. 0 = off."""
+        if days <= 0:
+            return 0
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+        def when(c: Call) -> datetime | None:
+            raw = c.ended_at or c.started_at
+            try:
+                dt = datetime.fromisoformat(raw)
+            except (TypeError, ValueError):
+                return None
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+        with self._lock:
+            old = [c.id for c in self._calls.values() if c.status == CallStatus.ended and (when(c) or cutoff) < cutoff]
+        count = sum(1 for cid in old if self.delete_call(cid))
+        already = set(old)
+        try:  # older calls that were never loaded back into memory still sit in saved storage
+            for cid in repo.expired_call_ids(cutoff):
+                if cid not in self._calls and cid not in already:
+                    repo.delete_call(cid)
+                    count += 1
+        except Exception as exc:  # noqa: BLE001 - storage down: the sweep simply runs again later
+            logger.warning("Retention sweep could not read saved calls: %s", exc)
+        if count:
+            logger.info("Retention: deleted %d call(s) older than %d day(s)", count, days)
+        return count
 
     def record_action(self, call_id: str, action_type: str, note: str, by_uid: str = "") -> OperatorAction | None:
         call = self._calls.get(call_id)

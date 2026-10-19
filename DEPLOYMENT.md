@@ -62,6 +62,7 @@ When `frontend/dist` exists the backend serves it automatically (or set `FRONTEN
 | `RESTRICT_CALL_ACCESS` | A call is visible only to its owner and people who joined it. | `true` |
 | `EVALUATOR_RATE_PER_MINUTE` | Questions per person per minute. | `20` |
 | `COOKIE_SECURE` | `auto` (Secure over https), `true` or `false`. | `auto` |
+| `RETENTION_DAYS` | Automatically delete ended calls this many days after they started (checked hourly). `0` keeps them until a person deletes them. Also deletes the saved copy in Firestore. | `0` |
 | `COOKIE_SAMESITE` | `lax`, or `none` for a separately hosted app (needs https). | `lax` |
 | `FRONTEND_DIST` | Folder with the built web app. | `frontend/dist` if built |
 | `DEEPGRAM_LANGUAGE`, `DEEPGRAM_MODEL`, `DEEPGRAM_KEYTERMS`, `DEEPGRAM_ENDPOINTING_MS` | Speech-to-text tuning. | see `.env` |

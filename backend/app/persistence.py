@@ -66,6 +66,10 @@ def _iso(value: Any) -> Optional[str]:
     return str(value)
 
 
+_DELETE = object()  # queue marker: delete this call and everything stored under it
+_CALL_SUBCOLLECTIONS = ("transcript", "alerts", "actions", "risk_history")
+
+
 class FirestoreRepo:
     def __init__(self, db: Any = None) -> None:
         self._db = db  # injectable for tests
@@ -121,11 +125,14 @@ class FirestoreRepo:
             try:
                 for attempt in (1, 2, 3):
                     try:
-                        self._ref(path).set(data, merge=True, retry=None, timeout=_WRITE_TIMEOUT)
+                        if data is _DELETE:
+                            self._delete_call_docs(path[1])
+                        else:
+                            self._ref(path).set(data, merge=True, retry=None, timeout=_WRITE_TIMEOUT)
                         break
                     except Exception as exc:  # noqa: BLE001 - never let a write kill the worker
                         if attempt == 3:
-                            logger.warning("Firestore write to %s failed: %s", "/".join(path), exc)
+                            logger.warning("Firestore %s of %s failed: %s", "delete" if data is _DELETE else "write", "/".join(path), exc)
                         else:
                             time.sleep(attempt)  # 1s, then 2s: a cold connection often fails once
             finally:
@@ -139,6 +146,39 @@ class FirestoreRepo:
             self._q.put_nowait((path, data))
         except queue.Full:
             logger.warning("Firestore write queue full; dropping write to %s", "/".join(path))
+
+    def _delete_call_docs(self, call_id: str) -> None:
+        """Delete the call document and every sub-document under it (Firestore does not do the latter by itself)."""
+        ref = self._client().collection("calls").document(call_id)
+        for name in _CALL_SUBCOLLECTIONS:
+            for snap in list(ref.collection(name).stream()):
+                snap.reference.delete()
+        ref.delete()
+
+    def delete_call(self, call_id: str) -> None:
+        """Queue the deletion of a saved call. It goes through the SAME queue as saves, so it runs after any save already
+        waiting for that call (a pending save can never bring a deleted call back). Unlike a save it is never dropped:
+        if it cannot be queued this raises, and the caller must not tell the person it worked."""
+        if not self.enabled:
+            return
+        self._ensure_thread()
+        try:
+            self._q.put((("calls", call_id), _DELETE), timeout=5)
+        except queue.Full as exc:
+            raise RuntimeError("the delete queue is full") from exc
+
+    def expired_call_ids(self, cutoff: datetime) -> list[str]:
+        """Ids of saved, ended calls that started before `cutoff` (used by the retention sweep). Raises on connection errors."""
+        if not self.enabled:
+            return []
+        coll = self._client().collection("calls")
+        try:
+            from google.cloud.firestore_v1.base_query import FieldFilter
+
+            query = coll.where(filter=FieldFilter("started_at", "<", cutoff))
+        except ImportError:  # very old client library
+            query = coll.where("started_at", "<", cutoff)
+        return [s.id for s in query.stream() if (s.to_dict() or {}).get("status") == "ended"]
 
     def flush(self, timeout: float = 30.0) -> bool:
         """Wait until queued writes are done (used by tests / graceful shutdown)."""

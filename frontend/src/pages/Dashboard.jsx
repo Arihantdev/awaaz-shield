@@ -115,6 +115,11 @@ export default function Dashboard() {
           }
           break;
         }
+        case "call_deleted":
+          setCalls((prev) => prev.filter((c) => c.id !== event.call_id));
+          setSelectedId((cur) => (cur === event.call_id ? null : cur));
+          refreshAnalytics();
+          break;
         case "demo_reset":
           setCalls([]);
           setSelectedId(null);

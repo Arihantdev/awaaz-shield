@@ -69,6 +69,9 @@ class Settings:
     # A public server must set ALLOW_DEV_LOGIN=false: then, without Firebase, nobody can sign in instead of everybody.
     ALLOW_DEV_LOGIN: bool = _bool("ALLOW_DEV_LOGIN", True)
 
+    # Delete calls (and their transcripts) this many days after they end. 0 = keep until a person deletes them.
+    RETENTION_DAYS: int = int(os.getenv("RETENTION_DAYS", "0"))
+
     # Session cookie. COOKIE_SECURE: "auto" (secure whenever the request arrived over https, also behind a proxy that
     # sends X-Forwarded-Proto), "true" or "false". COOKIE_SAMESITE: lax (default, same-site web/PWA), or none (needs https;
     # only for a separately hosted frontend such as an Android app that bundles the page).
@@ -122,6 +125,7 @@ class Settings:
             "dev_mode_auth": (not self.firebase_configured) and self.ALLOW_DEV_LOGIN,
             "risk_thresholds": dict(zip(("medium", "high", "critical"), self.risk_thresholds)),
             "call_access_restricted": self.RESTRICT_CALL_ACCESS,
+            "retention_days": max(0, self.RETENTION_DAYS),
         }
 
 

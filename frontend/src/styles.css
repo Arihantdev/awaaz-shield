@@ -896,3 +896,6 @@ html.cc-threat { --cc-glow: 221, 90, 101; }
   .vc-main { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
   .vc-main { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
 }
+
+.hist-bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.hist-item details > .btn { margin-top: 4px; }
