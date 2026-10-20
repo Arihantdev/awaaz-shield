@@ -19,6 +19,11 @@ One server does everything: the backend serves the API, the call sockets **and**
 
 Free-tier notes: the service sleeps when idle (the first open takes a while) and a restart drops calls that are only in memory. Saved calls are kept in Firestore (`FIRESTORE_ENABLED=true`, the default when Firebase is on).
 
+**Keeping the free server awake (cold starts).** Render's free plan puts the service to sleep after about 15 minutes without a request, and the next visitor waits up to a minute. Two ways to prevent that, both free:
+- `.github/workflows/keep-awake.yml` (already in this repo) makes GitHub call `/api/health` every 10 minutes. It works only if the repository is **public**; on a private repository it skips itself. GitHub can run it a few minutes late and pauses it after 60 days with no activity (push anything, or re-enable it under the Actions tab).
+- Or sign up at uptimerobot.com (free) and add an HTTP monitor for `https://awaaz-shield.onrender.com/api/health` with a 5-minute interval. This works for private repositories too.
+A free Render account has about 750 instance-hours a month, enough for one service running all month. If you have other free services, they share those hours. If the server still sleeps, the app now shows a "server is starting up" message instead of looking broken, and it no longer signs you out while the server wakes.
+
 *Whether Render passes the `VITE_FIREBASE_*` values to the Docker build as build arguments was not verified. If the login page says Firebase is not configured, build the image yourself with `--build-arg` (Option B) or check Render's Docker build-argument settings.*
 
 ## Option B: any Docker host (Fly.io, Railway, a VPS...)
@@ -64,6 +69,7 @@ When `frontend/dist` exists the backend serves it automatically (or set `FRONTEN
 | `COOKIE_SECURE` | `auto` (Secure over https), `true` or `false`. | `auto` |
 | `RETENTION_DAYS` | Automatically delete ended calls this many days after they started (checked hourly). `0` keeps them until a person deletes them. Also deletes the saved copy in Firestore. | `0` |
 | `AUTO_END_SCORE` | In-app voice calls are ended automatically when the caller's risk score goes above this number (1-99), and the call is escalated to operators. `0` turns the auto-cut off. | `75` |
+| `AUTO_END_LINES` | How many suspicious caller lines, while the score is above `AUTO_END_SCORE`, it takes to cut the call (1-5). The first line above the limit only warns both people. `1` cuts at once. | `2` |
 | `OPERATOR_EMAILS` | Comma-separated emails of operators. They see calls that were escalated (including auto-ended ones), can record a verdict, and cannot delete. Needs real Firebase sign-in; dev-login lets anyone claim an email. | empty |
 | `COOKIE_SAMESITE` | `lax`, or `none` for a separately hosted app (needs https). | `lax` |
 | `FRONTEND_DIST` | Folder with the built web app. | `frontend/dist` if built |

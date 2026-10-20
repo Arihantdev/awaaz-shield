@@ -23,6 +23,7 @@ from websockets.asyncio.server import serve  # noqa: E402
 
 from app.config import settings  # noqa: E402
 from app.main import app  # noqa: E402
+from app.routers.voice import rooms  # noqa: E402
 from app.store import store  # noqa: E402
 
 
@@ -119,10 +120,22 @@ def go_live(client, code):
     guest.send_text(json.dumps({"type": "ack_notice"}))
     until(host, is_t("live"))
     until(guest, is_t("live"))
+    # the server connects each person's transcription AFTER "live"; audio sent before that is dropped (a real call streams
+    # continuously so it does not matter there, but this test sends one phrase at a time)
+    room = rooms.get(code)
+    for _ in range(100):
+        if all(room.parts[r].upstream is not None for r in ("host", "guest")):
+            break
+        time.sleep(0.05)
     return host, guest
 
 
 expect(settings.auto_end_score == 75, "the default limit is 75")
+expect(settings.auto_end_lines == 2, "the default is to need a second suspicious line before cutting")
+for bad in (0, -1, 6, 99):
+    settings.AUTO_END_LINES = bad
+    expect(settings.auto_end_lines == 2, f"AUTO_END_LINES={bad} falls back to 2")
+settings.AUTO_END_LINES = 1  # the first block below tests the plain "cut at once" behaviour; confirmation is tested further down
 expect(settings.operator_emails == {"ops@example.com", "second.op@example.com"}, "operator emails are parsed, trimmed and lower-cased")
 
 with TestClient(app) as client:
@@ -194,6 +207,43 @@ with TestClient(app) as client:
         m = recv(ws)[1]
     expect(m["type"] == "error" and m["code"] == "no_room", "the cut call's code stops working")
 
+    # ---- by default the first alarming line only WARNS; a second suspicious line cuts ----
+    settings.AUTO_END_LINES = 2
+    BIG = "this is from the bank, your account will be blocked, share the otp and pin right now"
+    code, cid3 = start_call(client, "Confirm first")
+    host, guest = go_live(client, code)
+    host.send_bytes(say(BIG))
+    seen = until(host, is_t("warning"))
+    expect(seen[-1][1]["score"] > 75 and seen[-1][1]["limit"] == 75, "the first line above the limit warns the caller")
+    until(guest, is_t("warning"))
+    expect(store.get(cid3).status.value == "active" and store.get(cid3).ended_reason is None, "...and the call is NOT cut yet")
+    host.send_bytes(say("hello are you still there, can you hear me properly"))
+    until(host, is_t("risk"))
+    expect(store.get(cid3).status.value == "active", "a harmless line afterwards does not cut it")
+    host.send_bytes(say(BIG))
+    until(host, is_t("risk"))
+    host.send_bytes(say("send the money by upi right now, this is the police and there is a legal case"))
+    until(host, is_t("ended"))
+    until(guest, is_t("ended"))
+    time.sleep(0.4)
+    expect(store.get(cid3).ended_reason == "auto_risk" and store.get(cid3).disposition == "escalated", "the next suspicious line cuts and escalates it")
+    host.__exit__(None, None, None); guest.__exit__(None, None, None)
+
+    # ---- the guest's words never count towards the cut ----
+    code, cid4 = start_call(client, "Guest talks")
+    host, guest = go_live(client, code)
+    host.send_bytes(say(BIG))
+    until(host, is_t("warning"))
+    for _ in range(3):
+        guest.send_bytes(say("send the money by upi right now, this is the police"))
+        time.sleep(0.2)
+    time.sleep(0.4)
+    expect(store.get(cid4).status.value == "active", "lines from the other person do not count as the caller's second line")
+    host.send_text(json.dumps({"type": "hangup"}))
+    time.sleep(0.3)
+    host.__exit__(None, None, None); guest.__exit__(None, None, None)
+    settings.AUTO_END_LINES = 1
+
     # ---- turning the limit off ----
     settings.AUTO_END_SCORE = 0
     expect(settings.auto_end_score == 0 and client.get("/api/status", headers=HOST_H).json()["auto_end_score"] == 0, "AUTO_END_SCORE=0 turns the cut off")
@@ -207,6 +257,7 @@ with TestClient(app) as client:
     time.sleep(0.3)
     host.__exit__(None, None, None); guest.__exit__(None, None, None)
     settings.AUTO_END_SCORE = 75
+    settings.AUTO_END_LINES = 2
 
     # ---- demo / sample / text calls are never cut ----
     demo = client.post("/api/calls", json={"label": "Demo"}, headers=HOST_H).json()

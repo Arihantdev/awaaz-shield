@@ -9,14 +9,13 @@ import ConsentGate from "./components/ConsentGate";
 import useSpotlight from "./hooks/useSpotlight";
 import useIsMobile from "./hooks/useIsMobile";
 import MobileFrame from "./components/mobile/MobileFrame";
+import SlowLoad from "./components/SlowLoad";
 
 function PrivateRoute({ children }) {
   const { identity, checking } = useAuth();
   const location = useLocation();
   if (checking) {
-    return (
-      <div className="center-load" style={{ height: "100vh" }}>Loading…</div>
-    );
+    return <SlowLoad />;
   }
   // remember where they were going, so an invite link (/call?join=CODE) still works after signing in
   return identity ? children : <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;

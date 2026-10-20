@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { Mark } from "./TopBar";
 import LanguageSelect from "./LanguageSelect";
 import { useI18n } from "../i18n";
+import SlowLoad from "./SlowLoad";
 
 /**
  * Shown once per consent version, before the console loads. The acceptance is stored on the server
@@ -38,7 +39,7 @@ export default function ConsentGate({ children }) {
   }
 
   if (state.phase === "ok") return children;
-  if (state.phase === "loading") return <div className="center-load" style={{ height: "100vh" }}>{t("common.loading")}</div>;
+  if (state.phase === "loading") return <SlowLoad />;
   if (state.phase === "error") {
     return (
       <div className="consent">

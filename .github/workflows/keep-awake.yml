@@ -1,0 +1,17 @@
+# Keeps the free Render server from falling asleep (it sleeps after ~15 minutes without a request, and the next visitor
+# then waits up to a minute). GitHub calls /api/health every 10 minutes. Free for public repositories; it is skipped on a
+# private one (it would use up the free build minutes) - use a free uptime monitor instead (see DEPLOYMENT.md).
+# GitHub may run scheduled jobs a few minutes late, and pauses them after 60 days with no activity in the repository.
+name: keep-awake
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+jobs:
+  ping:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Wake the server
+        run: curl --fail --silent --show-error --retry 3 --retry-delay 20 --max-time 90 https://awaaz-shield.onrender.com/api/health

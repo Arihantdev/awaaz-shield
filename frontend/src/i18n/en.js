@@ -2,6 +2,7 @@
 export default {
   "lang.label": "Language",
   "common.loading": "Loading…",
+  "common.waking": "The server was asleep and is starting up. After a quiet spell this can take up to a minute. Please wait, there is nothing to do.",
   "common.cancel": "Cancel",
   "level.low": "low",
   "level.medium": "medium",
@@ -561,6 +562,7 @@ export default {
   "set.layoutDesktop": "Laptop",
   // ---- automatic cut of risky voice calls, and operators
   "voice.notice5": "If the caller's risk score goes above {n}, Awaaz Shield ends the call for both of you and sends it to an operator, who can read what was said.",
+  "voice.warnCut": "If the caller keeps asking for codes, money or remote access, Awaaz Shield will end this call automatically.",
   "voice.cutTitle": "This call was ended by Awaaz Shield",
   "voice.cutBody": "The risk score reached {score}, above the limit of {limit}. The call has been sent to an operator. If you were asked for an OTP, PIN, password or money, do not share it, and contact your bank or the police directly.",
   "call.autoEndedTitle": "Ended automatically by Awaaz Shield",

@@ -67,6 +67,8 @@ class Settings:
     AUTO_END_SCORE: int = int(os.getenv("AUTO_END_SCORE", "75"))
     # Comma-separated emails of operators. An operator sees calls that were escalated (by the auto-cut or by a person),
     # not everyone's calls. Needs real sign-in (Firebase) so that an email can be trusted.
+    # How many suspicious caller lines must happen while the score is above the limit before the call is cut (1 = cut at once).
+    AUTO_END_LINES: int = int(os.getenv("AUTO_END_LINES", "2"))
     OPERATOR_EMAILS: str = os.getenv("OPERATOR_EMAILS", "")
     # Cap on risk-evaluator questions per person per minute (protects Claude spend).
     EVALUATOR_RATE_PER_MINUTE: int = int(os.getenv("EVALUATOR_RATE_PER_MINUTE", "20"))
@@ -106,6 +108,11 @@ class Settings:
         return self.AUTO_END_SCORE if 1 <= self.AUTO_END_SCORE <= 99 else 0
 
     @property
+    def auto_end_lines(self) -> int:
+        """1-5; anything else falls back to 2. 1 cuts on the first line above the limit, 2+ asks for confirmation first."""
+        return self.AUTO_END_LINES if 1 <= self.AUTO_END_LINES <= 5 else 2
+
+    @property
     def operator_emails(self) -> set[str]:
         return {e.strip().lower() for e in self.OPERATOR_EMAILS.split(",") if e.strip()}
 
@@ -142,6 +149,7 @@ class Settings:
             "call_access_restricted": self.RESTRICT_CALL_ACCESS,
             "retention_days": max(0, self.RETENTION_DAYS),
             "auto_end_score": self.auto_end_score,
+            "auto_end_lines": self.auto_end_lines,
         }
 
 

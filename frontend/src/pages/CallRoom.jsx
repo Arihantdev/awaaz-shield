@@ -37,6 +37,7 @@ export default function CallRoom() {
   const [call, setCall] = useState(FRESH);
   const [endedWhy, setEndedWhy] = useState("you");
   const [cut, setCut] = useState(null); // { score, limit } when Awaaz Shield ended the call because the risk was too high
+  const [warn, setWarn] = useState(false); // the score is above the limit: both people are warned before a cut
   const [autoEnd, setAutoEnd] = useState(0); // the limit the server uses (0 = off), shown in the notice
   const [elapsed, setElapsed] = useState(0);
   const [copied, setCopied] = useState("");
@@ -120,6 +121,9 @@ export default function CallRoom() {
         break;
       case "notice":
         if (m.code === "stt_unavailable") setCall((c) => ({ ...c, sttOff: true }));
+        break;
+      case "warning":
+        setWarn(true);
         break;
       case "ended":
         if (m.reason === "risk_threshold") { setCut({ score: m.score, limit: m.limit }); finish("risk"); }
@@ -220,6 +224,7 @@ export default function CallRoom() {
     setErr("");
     setCall(FRESH);
     setCut(null);
+    setWarn(false);
     setJoinCode("");
   }
 
@@ -343,10 +348,10 @@ export default function CallRoom() {
               {role === "guest" && call.risk && !scary && <p className="vc-chip-note"><ShieldCheck size={14} aria-hidden="true" />{t("voice.riskNow", { level: t(`level.${call.risk.level}`) })}</p>}
             </section>
 
-            {scary && (
+            {(scary || warn) && (
               <section className="vc-warn" role="alert">
                 <ShieldAlert size={22} aria-hidden="true" />
-                <div><b>{t("voice.warnTitle")}</b><p>{t("voice.warnBody")}</p></div>
+                <div><b>{t("voice.warnTitle")}</b><p>{t("voice.warnBody")}</p>{warn && autoEnd > 0 && <p><b>{t("voice.warnCut")}</b></p>}</div>
               </section>
             )}
 

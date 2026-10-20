@@ -18,6 +18,8 @@ Messages to the browser (JSON text unless noted):
   {"type":"peer_muted","muted":bool}
   {"type":"caption","speaker":"caller"|"agent","text","final":bool}
   {"type":"risk","score","level"}                                  after every finished phrase
+  {"type":"warning","score","limit"}                               the score is above the cut limit; if the caller keeps
+                                                                   saying suspicious things the call will be cut (AUTO_END_LINES)
   {"type":"notice","code":"stt_unavailable","message"}             the call works, but is not transcribed
   {"type":"ended","reason"}                                        then the socket closes. reason: "host_left", or
                                                                    "risk_threshold" (+ "score","limit"): the call was cut
@@ -43,6 +45,7 @@ from pydantic import BaseModel
 from .. import auth
 from ..config import settings
 from ..models import Speaker, TranscriptChunk
+from ..risk import heuristic
 from ..store import store
 
 logger = logging.getLogger("awaaz.voice")
@@ -104,6 +107,8 @@ class Room:
         self._live_event: Optional[asyncio.Event] = None
         self.ever_live = False
         self.end_reason: Optional[str] = None  # "risk" when Awaaz Shield cut the call
+        self.hot = 0  # caller lines so far that kept the score above the cut limit (a cut needs AUTO_END_LINES of them)
+        self.warned = False
 
     @property
     def live_event(self) -> asyncio.Event:
@@ -263,8 +268,12 @@ async def _stt_worker(room: Room, p: Participant) -> None:
             if updated:
                 room.broadcast({"type": "risk", "score": updated.current_score, "level": updated.current_level.value})
                 limit = settings.auto_end_score
-                if limit and updated.current_score > limit and not room.ended:
-                    await _auto_end(room, updated.current_score, limit)
+                if limit and not room.ended:
+                    verdict = _cut_decision(room, p, text, updated.current_score, limit)
+                    if verdict == "warn":
+                        room.broadcast({"type": "warning", "score": updated.current_score, "limit": limit})
+                    elif verdict == "cut":
+                        await _auto_end(room, updated.current_score, limit)
     except Exception as exc:  # noqa: BLE001 - the call itself must survive a transcription failure
         logger.warning("Transcription for %s stopped: %r", p.role, exc)
     finally:
@@ -274,6 +283,29 @@ async def _stt_worker(room: Room, p: Participant) -> None:
             await upstream.close()
         except Exception:  # noqa: BLE001
             pass
+
+
+def _cut_decision(room: Room, p: Participant, text: str, score: int, limit: int) -> str:
+    """"cut", "warn" or "none" after one more final line. One alarming sentence can be a real bank or an honest slip, so
+    the first line above the limit only WARNS both people; the call is cut when AUTO_END_LINES lines in all (the first one
+    plus later lines that themselves contain a scam tactic) have kept the score above the limit. A harmless reply in between
+    changes nothing, and if the score falls back to the limit or below, the count starts again. Only the caller's lines count:
+    the score is built from the caller's words alone."""
+    if p.speaker != Speaker.caller:
+        return "none"
+    if score <= limit:
+        room.hot, room.warned = 0, False
+        return "none"
+    if room.hot == 0:
+        room.hot = 1
+    elif heuristic.score_transcript(text, None).matched_patterns:
+        room.hot += 1
+    if room.hot >= settings.auto_end_lines:
+        return "cut"
+    if not room.warned:
+        room.warned = True
+        return "warn"
+    return "none"
 
 
 async def _auto_end(room: Room, score: int, limit: int) -> None:

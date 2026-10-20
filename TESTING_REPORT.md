@@ -40,17 +40,23 @@ Date: 2026-10-19. Branch: `mobile-app`. This lists what was actually run and wha
 | **Claude-worded evaluator answers** | needs an Anthropic key. Only the offline answers were tested; the Claude path falls back to them on any error. |
 | **Two real phones in one call, over the internet** | the call logic was tested in-process only. |
 | **Your Mac** | `npm test` and `npm run dev` on macOS, GPU effects on real hardware. |
-| **Other languages** | the new screens have English text only; Hindi and the other six show English there. |
+| **Translation quality** | all seven languages now cover every screen, but the new text is machine-written. A native speaker should read it. |
 
 ## Automatic call cut (risk above 75)
 
-- `backend/test_autoend.py` (31 checks, in `npm run test:backend`): calm call not cut; scam call cut once; both sides told with the reason; call ended, escalated once and shared with operators; operator gets `auto_ended`; ordinary user gets 404; operator cannot delete; limit can be turned off; demo calls never cut.
-- Browser test (Chromium, fake Deepgram, fake microphone): operator on a laptop, caller and guest on phone-sized screens, plus an ordinary user. 14/14 passed. The operator sees the toast, the Auto-ended/Escalated tags and the detail banner; the ordinary user sees nothing.
+- `backend/test_autoend.py` (42 checks, in `npm run test:backend`): calm call not cut; the first alarming caller line only warns both people, and a cut needs `AUTO_END_LINES` (default 2) lines, later ones counting only if they match a scam pattern; guest lines never count; scam call cut once; both sides told with the reason; call ended, escalated once and shared with operators; operator gets `auto_ended`; ordinary user gets 404; operator cannot delete; limit can be turned off; demo calls never cut.
+- Browser test (Chromium, fake Deepgram, fake microphone): operator on a laptop, caller and guest on phone-sized screens, plus an ordinary user. every check passed (about 35, including the warning before the cut). The operator sees the toast, the Auto-ended/Escalated tags and the detail banner; the ordinary user sees nothing.
 - Not tested: two real phones over the internet, live Deepgram audio, real Firebase sign-in for operators.
+
+## Languages and cold start
+
+- Browser test: all seven non-English languages render the home page title and the settings page with no leftover English headings. Key check: no missing or duplicate keys in any language file.
+- Cold start: with the first 5 `/api/auth/me` calls forced to fail with 503, the page shows the "waking up" message and then lands in the app, still signed in. Frontend unit tests: 33 passed.
+- Not tested: a real Render sleep and wake, and the GitHub keep-awake workflow (it runs only on GitHub, and only if the repo is public).
 
 ## Known limitations
 
-- A single very high-scoring line can end a call (false-positive risk). Tune or disable with `AUTO_END_SCORE`.
+- False positives: one alarming line now only warns, and two are needed to cut (`AUTO_END_LINES=1` restores cut-at-once). A real bank or police officer who uses the same words as a scammer can still be cut; the rules cannot tell them apart. Tune or disable with `AUTO_END_SCORE`.
 - Operators only see escalated calls, and the auto-cut applies to in-app voice calls only.
 
 - Ordinary mobile-network (SIM) calls cannot be monitored on Android or iPhone (MOBILE.md).
