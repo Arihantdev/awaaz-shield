@@ -41,7 +41,7 @@ class Settings:
 
     DEEPGRAM_API_KEY: str = os.getenv("DEEPGRAM_API_KEY", "")
 
-    CONSENT_VERSION: str = os.getenv("CONSENT_VERSION", "2026-10-v1")
+    CONSENT_VERSION: str = os.getenv("CONSENT_VERSION", "2026-10-v2")
     CONSENT_LOG_PATH: str = os.getenv("CONSENT_LOG_PATH", "./data/consents.jsonl")
     DEEPGRAM_LANGUAGE: str = os.getenv("DEEPGRAM_LANGUAGE", "multi")
     DEEPGRAM_MODEL: str = os.getenv("DEEPGRAM_MODEL", "nova-3")
