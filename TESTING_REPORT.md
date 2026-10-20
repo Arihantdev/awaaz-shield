@@ -48,6 +48,20 @@ Date: 2026-10-19. Branch: `mobile-app`. This lists what was actually run and wha
 - Browser test (Chromium, fake Deepgram, fake microphone): operator on a laptop, caller and guest on phone-sized screens, plus an ordinary user. every check passed (about 35, including the warning before the cut). The operator sees the toast, the Auto-ended/Escalated tags and the detail banner; the ordinary user sees nothing.
 - Not tested: two real phones over the internet, live Deepgram audio, real Firebase sign-in for operators.
 
+## Risk scorer evaluation (`python backend/eval_risk.py`)
+
+106 hand-written, fictional calls (55 scam, 34 benign, 17 ambiguous), each fed to the scorer line by line as in the live app. The data is in `docs/sample_dataset.csv`.
+
+| Set | Calls in the expected band | Scams alerted | False high-risk alerts | Score ever dropped |
+|---|---|---|---|---|
+| dev (tuned on) | 29/29 | 16/16 | 0/13 | 0 |
+| holdout | 16/16 | 8/8 | 0/8 | 0 |
+| fresh (run once, untuned) | 10/10 | 5/5 | 0/5 | 0 |
+| realistic (speech-to-text style) | 31/31 | 16/16 | 0/15 | 0 |
+| realistic2 (speech-to-text style) | 20/20 | 10/10 | 0/10 | 0 |
+
+Read this honestly: the dev, holdout and realistic sets were used while tuning the rules, so only "fresh" and the first run of "realistic2" (13/20 before tuning) say anything about unseen calls. These are hand-written examples, not recordings of real calls, so they are a regression check, not a measure of accuracy on real traffic.
+
 ## Languages and cold start
 
 - Browser test: all seven non-English languages render the home page title and the settings page with no leftover English headings. Key check: no missing or duplicate keys in any language file.

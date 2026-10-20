@@ -4,6 +4,23 @@ A local prototype that turns speech into a live transcript and scores it for fin
 
 Risk scores support a decision; they do not prove fraud.
 
+## How it works
+
+![Architecture](docs/architecture.png)
+
+Two people talk through the app. The backend relays the audio, sends each side to Deepgram for transcription, and scores only the caller's words with a rules-based scorer (the score is cumulative over the whole call). If the score passes the limit the caller and the other person are warned, and if it stays high the call is ended and escalated to operators, who see it on the laptop command centre. Diagram source: `docs/architecture.mmd`.
+
+## Documentation
+
+| What | Where |
+|---|---|
+| API reference (REST and WebSocket messages) | [API.md](API.md), and `/docs` on the running server |
+| Deployment (Render, environment variables, cold starts) | [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Tests, evaluation results, known limits | [TESTING_REPORT.md](TESTING_REPORT.md) |
+| Sample dataset (106 labelled calls, 248 lines) | [docs/sample_dataset.csv](docs/sample_dataset.csv) |
+| Demo video (53 s: warning, automatic cut, operator view; scripted caller speech) | [docs/demo.mp4](docs/demo.mp4) |
+| Android app and phones | [MOBILE.md](MOBILE.md) |
+
 ## Quick start (one command)
 
 Requirements: Node.js 18+ and Python 3.10+.

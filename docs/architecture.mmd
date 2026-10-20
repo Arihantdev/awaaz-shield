@@ -1,0 +1,30 @@
+flowchart TB
+  subgraph Clients
+    P1[Caller phone / browser<br/>React PWA or Android APK]
+    P2[Guest phone / browser]
+    OP[Operator laptop<br/>command centre]
+  end
+  subgraph Render["Render web service (FastAPI)"]
+    VOICE["/ws/voice room<br/>relay audio + consent gate"]
+    SCORE["Risk engine<br/>rules scorer, cumulative score"]
+    CUT["Auto-cut<br/>warn, then end + escalate"]
+    STORE["Call store<br/>REST /api/calls, /ws/dashboard"]
+    AUTH["Session auth + consent log"]
+  end
+  DG[(Deepgram<br/>speech to text)]
+  FS[(Firebase Auth + Firestore)]
+  P1 <-->|PCM audio, captions, risk| VOICE
+  P2 <-->|PCM audio, captions, risk| VOICE
+  VOICE -->|each side's audio| DG
+  DG -->|transcript lines| VOICE
+  VOICE -->|caller lines| SCORE
+  SCORE --> CUT
+  CUT -->|warning / ended| VOICE
+  SCORE --> STORE
+  CUT -->|escalated call| STORE
+  STORE -->|live events| OP
+  OP -->|flag, escalate, dismiss| STORE
+  AUTH --- FS
+  STORE --- FS
+  P1 --> AUTH
+  OP --> AUTH
